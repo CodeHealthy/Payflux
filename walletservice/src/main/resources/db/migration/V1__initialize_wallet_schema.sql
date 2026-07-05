@@ -1,0 +1,1 @@
+-- Wallet schema will be created here as wallet domain models are added.
