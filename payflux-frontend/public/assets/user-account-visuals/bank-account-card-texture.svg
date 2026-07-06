@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" fill="none">
+    <defs>
+      <linearGradient id="cardGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#041941"/><stop offset="48%" stop-color="#06275F"/><stop offset="100%" stop-color="#1677FF"/></linearGradient>
+      <pattern id="circles" width="86" height="86" patternUnits="userSpaceOnUse"><circle cx="6" cy="6" r="2" fill="#fff" opacity=".16"/><path d="M0 86C30 58 58 30 86 0" stroke="#fff" stroke-opacity=".08" stroke-width="2"/></pattern>
+    </defs>
+    <rect width="640" height="400" rx="44" fill="url(#cardGrad)"/>
+    <rect width="640" height="400" rx="44" fill="url(#circles)"/>
+    <circle cx="560" cy="92" r="112" fill="#fff" opacity=".08"/>
+    <circle cx="604" cy="108" r="112" fill="#fff" opacity=".05"/>
+    <rect x="54" y="72" width="92" height="62" rx="16" fill="#E6F0FF" opacity=".9"/>
+    <path d="M62 103h76M100 80v48" stroke="#041941" stroke-width="4" opacity=".38"/>
+    <path d="M54 218h330" stroke="#fff" stroke-width="16" stroke-linecap="round" opacity=".76"/>
+    <path d="M54 274h170M54 322h104" stroke="#fff" stroke-width="12" stroke-linecap="round" opacity=".48"/>
+    <text x="506" y="324" fill="#fff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="28" font-weight="800" opacity=".84">PayFlux</text>
+    </svg>

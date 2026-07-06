@@ -1,7 +1,8 @@
 import { EmptyState } from '../../components/EmptyState'
+import { payfluxAssets } from '../../assets/payfluxAssets'
 import { formatDateTime } from '../../utils/formatDateTime'
 
-const noBeneficiariesImage = '/assets/empty-states/no-beneficiaries.png'
+const noBeneficiariesImage = payfluxAssets.emptyStates.beneficiaries
 
 export function BeneficiariesTable({ beneficiaries, isLoading }) {
   return (

@@ -1,15 +1,17 @@
+name: payflux
+
 services:
   kafka:
-    image: apache/kafka:4.0.0
-    container_name: payflux-kafka
+    image: ${KAFKA_IMAGE:-apache/kafka:4.0.0}
+    container_name: ${KAFKA_CONTAINER_NAME:-payflux-kafka}
     ports:
-      - "9092:9092"
+      - "${KAFKA_HOST_PORT:-9092}:9092"
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
       KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: ${KAFKA_ADVERTISED_LISTENERS:-PLAINTEXT://localhost:9092}
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
@@ -20,106 +22,106 @@ services:
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
 
   kafka-ui:
-    image: provectuslabs/kafka-ui:v0.7.2
-    container_name: payflux-kafka-ui
+    image: ${KAFKA_UI_IMAGE:-provectuslabs/kafka-ui:v0.7.2}
+    container_name: ${KAFKA_UI_CONTAINER_NAME:-payflux-kafka-ui}
     depends_on:
       - kafka
     ports:
-      - "8085:8080"
+      - "${KAFKA_UI_HOST_PORT:-8085}:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
 
   redis:
-    image: redis:7.4-alpine
-    container_name: payflux-redis
+    image: ${REDIS_IMAGE:-redis:7.4-alpine}
+    container_name: ${REDIS_CONTAINER_NAME:-payflux-redis}
     ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes
+      - "${REDIS_HOST_PORT:-6379}:6379"
+    command: redis-server --appendonly yes ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}
     volumes:
       - redis-data:/data
 
   account-db:
-    image: postgres:16
-    container_name: payflux-account-db
+    image: ${POSTGRES_IMAGE:-postgres:16}
+    container_name: ${ACCOUNT_DB_CONTAINER_NAME:-payflux-account-db}
     ports:
-      - "5543:5432"
+      - "${ACCOUNT_DB_HOST_PORT:-5543}:5432"
     environment:
-      POSTGRES_DB: accountdb
-      POSTGRES_USER: payflux
-      POSTGRES_PASSWORD: accountAdmin
+      POSTGRES_DB: ${ACCOUNT_DB_NAME:?Set ACCOUNT_DB_NAME in .env}
+      POSTGRES_USER: ${ACCOUNT_DB_USER:?Set ACCOUNT_DB_USER in .env}
+      POSTGRES_PASSWORD: ${ACCOUNT_DB_PASSWORD:?Set ACCOUNT_DB_PASSWORD in .env}
     volumes:
       - account-db-data:/var/lib/postgresql/data
 
   notification-db:
-    image: postgres:16
-    container_name: payflux-notification-db
+    image: ${POSTGRES_IMAGE:-postgres:16}
+    container_name: ${NOTIFICATION_DB_CONTAINER_NAME:-payflux-notification-db}
     ports:
-      - "5544:5432"
+      - "${NOTIFICATION_DB_HOST_PORT:-5544}:5432"
     environment:
-      POSTGRES_DB: notificationdb
-      POSTGRES_USER: payflux
-      POSTGRES_PASSWORD: notificationAdmin
+      POSTGRES_DB: ${NOTIFICATION_DB_NAME:?Set NOTIFICATION_DB_NAME in .env}
+      POSTGRES_USER: ${NOTIFICATION_DB_USER:?Set NOTIFICATION_DB_USER in .env}
+      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD:?Set NOTIFICATION_DB_PASSWORD in .env}
     volumes:
       - notification-db-data:/var/lib/postgresql/data
 
   wallet-db:
-    image: postgres:16
-    container_name: payflux-wallet-db
+    image: ${POSTGRES_IMAGE:-postgres:16}
+    container_name: ${WALLET_DB_CONTAINER_NAME:-payflux-wallet-db}
     ports:
-      - "5545:5432"
+      - "${WALLET_DB_HOST_PORT:-5545}:5432"
     environment:
-      POSTGRES_DB: walletdb
-      POSTGRES_USER: payflux
-      POSTGRES_PASSWORD: walletAdmin
+      POSTGRES_DB: ${WALLET_DB_NAME:?Set WALLET_DB_NAME in .env}
+      POSTGRES_USER: ${WALLET_DB_USER:?Set WALLET_DB_USER in .env}
+      POSTGRES_PASSWORD: ${WALLET_DB_PASSWORD:?Set WALLET_DB_PASSWORD in .env}
     volumes:
       - wallet-db-data:/var/lib/postgresql/data
 
   transaction-db:
-    image: postgres:16
-    container_name: payflux-transaction-db
+    image: ${POSTGRES_IMAGE:-postgres:16}
+    container_name: ${TRANSACTION_DB_CONTAINER_NAME:-payflux-transaction-db}
     ports:
-      - "5548:5432"
+      - "${TRANSACTION_DB_HOST_PORT:-5548}:5432"
     environment:
-      POSTGRES_DB: transactiondb
-      POSTGRES_USER: payflux
-      POSTGRES_PASSWORD: transactionAdmin
+      POSTGRES_DB: ${TRANSACTION_DB_NAME:?Set TRANSACTION_DB_NAME in .env}
+      POSTGRES_USER: ${TRANSACTION_DB_USER:?Set TRANSACTION_DB_USER in .env}
+      POSTGRES_PASSWORD: ${TRANSACTION_DB_PASSWORD:?Set TRANSACTION_DB_PASSWORD in .env}
     volumes:
       - transaction-db-data:/var/lib/postgresql/data
 
   audit-db:
-    image: postgres:16
-    container_name: payflux-audit-db
+    image: ${POSTGRES_IMAGE:-postgres:16}
+    container_name: ${AUDIT_DB_CONTAINER_NAME:-payflux-audit-db}
     ports:
-      - "5549:5432"
+      - "${AUDIT_DB_HOST_PORT:-5549}:5432"
     environment:
-      POSTGRES_DB: auditdb
-      POSTGRES_USER: payflux
-      POSTGRES_PASSWORD: auditAdmin
+      POSTGRES_DB: ${AUDIT_DB_NAME:?Set AUDIT_DB_NAME in .env}
+      POSTGRES_USER: ${AUDIT_DB_USER:?Set AUDIT_DB_USER in .env}
+      POSTGRES_PASSWORD: ${AUDIT_DB_PASSWORD:?Set AUDIT_DB_PASSWORD in .env}
     volumes:
       - audit-db-data:/var/lib/postgresql/data
 
   beneficiary-db:
-    image: postgres:16
-    container_name: payflux-beneficiary-db
+    image: ${POSTGRES_IMAGE:-postgres:16}
+    container_name: ${BENEFICIARY_DB_CONTAINER_NAME:-payflux-beneficiary-db}
     ports:
-      - "5547:5432"
+      - "${BENEFICIARY_DB_HOST_PORT:-5547}:5432"
     environment:
-      POSTGRES_DB: beneficiarydb
-      POSTGRES_USER: payflux
-      POSTGRES_PASSWORD: beneficiaryAdmin
+      POSTGRES_DB: ${BENEFICIARY_DB_NAME:?Set BENEFICIARY_DB_NAME in .env}
+      POSTGRES_USER: ${BENEFICIARY_DB_USER:?Set BENEFICIARY_DB_USER in .env}
+      POSTGRES_PASSWORD: ${BENEFICIARY_DB_PASSWORD:?Set BENEFICIARY_DB_PASSWORD in .env}
     volumes:
       - beneficiary-db-data:/var/lib/postgresql/data
 
   auth-db:
-    image: postgres:16
-    container_name: payflux-auth-db
+    image: ${POSTGRES_IMAGE:-postgres:16}
+    container_name: ${AUTH_DB_CONTAINER_NAME:-payflux-auth-db}
     ports:
-      - "5546:5432"
+      - "${AUTH_DB_HOST_PORT:-5546}:5432"
     environment:
-      POSTGRES_DB: authdb
-      POSTGRES_USER: payflux
-      POSTGRES_PASSWORD: authAdmin
+      POSTGRES_DB: ${AUTH_DB_NAME:?Set AUTH_DB_NAME in .env}
+      POSTGRES_USER: ${AUTH_DB_USER:?Set AUTH_DB_USER in .env}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD:?Set AUTH_DB_PASSWORD in .env}
     volumes:
       - auth-db-data:/var/lib/postgresql/data
 

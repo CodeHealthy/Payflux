@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none">
+    
+    <defs>
+      <linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#006CFF"/>
+        <stop offset="100%" stop-color="#1677FF"/>
+      </linearGradient>
+      <linearGradient id="navyGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#041941"/>
+        <stop offset="100%" stop-color="#06275F"/>
+      </linearGradient>
+      <linearGradient id="softBlue" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#FFFFFF"/>
+        <stop offset="100%" stop-color="#EAF3FF"/>
+      </linearGradient>
+      <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#031536" flood-opacity="0.16"/>
+      </filter>
+      <filter id="smallShadow" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#031536" flood-opacity="0.14"/>
+      </filter>
+    </defs>
+    <rect width="256" height="256" rx="64" fill="#F6F9FF"/>
+    <circle cx="58" cy="58" r="42" fill="#EF4444" opacity=".12"/>
+    <circle cx="208" cy="207" r="54" fill="#006CFF" opacity=".08"/>
+    <g filter="url(#smallShadow)">
+        <rect x="66" y="86" width="124" height="82" rx="22" fill="#fff" stroke="#C9D8F2" stroke-width="6"/>
+        <path d="M90 128h78" stroke="#041941" stroke-width="10" stroke-linecap="round"/>
+        <path d="M142 104l30 24-30 24" stroke="#041941" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="177" cy="75" r="30" fill="#EF4444"/>
+        <path d="M165 63l24 24M189 63l-24 24" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
+        </g>
+    <title>Failed Transfer</title>
+    </svg>

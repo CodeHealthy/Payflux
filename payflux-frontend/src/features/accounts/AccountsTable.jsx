@@ -1,7 +1,8 @@
 import { EmptyState } from '../../components/EmptyState'
+import { payfluxAssets } from '../../assets/payfluxAssets'
 import { formatDateTime } from '../../utils/formatDateTime'
 
-const noStatementsImage = '/assets/empty-states/no-statements.png'
+const noAccountsImage = payfluxAssets.emptyStates.wallet
 
 export function AccountsTable({ accounts, isLoading }) {
   return (
@@ -15,7 +16,7 @@ export function AccountsTable({ accounts, isLoading }) {
 
       {accounts.length === 0 ? (
         <EmptyState
-          imageSrc={noStatementsImage}
+          imageSrc={noAccountsImage}
           isLoading={isLoading}
           loadingText="Loading accounts..."
           text="No accounts have been created yet."

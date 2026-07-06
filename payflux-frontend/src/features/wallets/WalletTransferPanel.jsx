@@ -33,6 +33,7 @@ export function WalletTransferPanel({ beneficiaries, isSubmitting, onPrepareTran
     event.preventDefault()
     const walletDetails = await onConfirmTransfer({
       confirmationId: confirmation.confirmationId,
+      idempotencyKey: confirmation.idempotencyKey,
       otp,
     })
 

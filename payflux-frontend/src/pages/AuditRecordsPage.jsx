@@ -1,7 +1,8 @@
 import { EmptyState } from '../components/EmptyState'
+import { payfluxAssets } from '../assets/payfluxAssets'
 import { formatDateTime } from '../utils/formatDateTime'
 
-const emptyImage = '/assets/empty-states/no-statements.png'
+const emptyImage = payfluxAssets.admin.auditLog
 
 export function AuditRecordsPage({ auditRecords, isLoading }) {
   return (

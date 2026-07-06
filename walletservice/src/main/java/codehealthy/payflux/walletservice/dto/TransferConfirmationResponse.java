@@ -11,6 +11,7 @@ public record TransferConfirmationResponse(
 		String currency,
 		String description,
 		Instant expiresAt,
+		String idempotencyKey,
 		String devOtp
 ) {
 }

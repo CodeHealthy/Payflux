@@ -1,7 +1,8 @@
 import { EmptyState } from '../../components/EmptyState'
+import { payfluxAssets } from '../../assets/payfluxAssets'
 import { formatMoney } from '../../utils/formatMoney'
 
-const walletImage = '/assets/empty-states/no-statements.png'
+const walletImage = payfluxAssets.emptyStates.wallet
 
 export function WalletSummaryPanel({ walletDashboard, isLoading, onRefresh }) {
   const wallet = walletDashboard?.wallet

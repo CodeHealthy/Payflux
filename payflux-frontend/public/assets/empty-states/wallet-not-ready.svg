@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="384" viewBox="0 0 512 384" fill="none">
+    
+    <defs>
+      <linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#006CFF"/>
+        <stop offset="100%" stop-color="#1677FF"/>
+      </linearGradient>
+      <linearGradient id="navyGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#041941"/>
+        <stop offset="100%" stop-color="#06275F"/>
+      </linearGradient>
+      <linearGradient id="softBlue" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#FFFFFF"/>
+        <stop offset="100%" stop-color="#EAF3FF"/>
+      </linearGradient>
+      <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#031536" flood-opacity="0.16"/>
+      </filter>
+      <filter id="smallShadow" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#031536" flood-opacity="0.14"/>
+      </filter>
+    </defs>
+    <rect width="512" height="384" rx="40" fill="#F6F9FF"/>
+    <circle cx="74" cy="78" r="54" fill="#6D5DFB" opacity=".10"/>
+    <circle cx="442" cy="303" r="80" fill="#006CFF" opacity=".07"/>
+    <path d="M72 303C133 259 185 250 249 277c74 32 121 6 184-43" stroke="#C9D8F2" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+    
+        <ellipse cx="256" cy="322" rx="158" ry="29" fill="#C9D8F2" opacity=".45"/>
+        <rect x="134" y="124" width="244" height="142" rx="34" fill="#fff" stroke="#C9D8F2" stroke-width="6" filter="url(#shadow)"/>
+        <rect x="272" y="166" width="92" height="58" rx="20" fill="#EAF3FF" stroke="#C9D8F2" stroke-width="5"/>
+        <circle cx="312" cy="195" r="12" fill="#6D5DFB"/>
+        <path d="M165 154h102M165 190h60" stroke="#041941" stroke-width="10" stroke-linecap="round" opacity=".38"/>
+        <circle cx="370" cy="113" r="38" fill="#F59E0B"/>
+        <path d="M370 94v27" stroke="#fff" stroke-width="9" stroke-linecap="round"/>
+        <circle cx="370" cy="137" r="5" fill="#fff"/>
+        
+    <text x="256" y="357" text-anchor="middle" fill="#041941" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="18" font-weight="800">Wallet not ready</text>
+    </svg>

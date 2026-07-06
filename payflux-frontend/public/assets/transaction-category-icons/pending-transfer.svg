@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none">
+    
+    <defs>
+      <linearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#006CFF"/>
+        <stop offset="100%" stop-color="#1677FF"/>
+      </linearGradient>
+      <linearGradient id="navyGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#041941"/>
+        <stop offset="100%" stop-color="#06275F"/>
+      </linearGradient>
+      <linearGradient id="softBlue" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#FFFFFF"/>
+        <stop offset="100%" stop-color="#EAF3FF"/>
+      </linearGradient>
+      <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#031536" flood-opacity="0.16"/>
+      </filter>
+      <filter id="smallShadow" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#031536" flood-opacity="0.14"/>
+      </filter>
+    </defs>
+    <rect width="256" height="256" rx="64" fill="#F6F9FF"/>
+    <circle cx="58" cy="58" r="42" fill="#F59E0B" opacity=".12"/>
+    <circle cx="208" cy="207" r="54" fill="#006CFF" opacity=".08"/>
+    <g filter="url(#smallShadow)">
+        <rect x="62" y="88" width="119" height="78" rx="22" fill="#fff" stroke="#C9D8F2" stroke-width="6"/>
+        <path d="M87 127h63" stroke="#041941" stroke-width="10" stroke-linecap="round"/>
+        <path d="M132 105l28 22-28 22" stroke="#F59E0B" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="178" cy="83" r="31" fill="#fff" stroke="#F59E0B" stroke-width="8"/>
+        <path d="M178 66v19l13 9" stroke="#F59E0B" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+    <title>Pending Transfer</title>
+    </svg>

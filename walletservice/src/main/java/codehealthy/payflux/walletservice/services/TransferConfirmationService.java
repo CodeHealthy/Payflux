@@ -51,6 +51,7 @@ public class TransferConfirmationService {
 				pendingTransfer.currency(),
 				pendingTransfer.description(),
 				pendingTransfer.expiresAt(),
+				pendingTransfer.idempotencyKey(),
 				pendingTransfer.otp()
 		);
 	}
@@ -65,7 +66,7 @@ public class TransferConfirmationService {
 		PendingTransfer pendingTransfer = fromJson(payload);
 		if (!pendingTransfer.otp().equals(requireText(otp, "otp"))) {
 			registerFailedOtpAttempt(ownerUserId, pendingTransfer.confirmationId());
-			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid transfer confirmation code");
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid transfer confirmation code");
 		}
 
 		redisTemplate.delete(key);

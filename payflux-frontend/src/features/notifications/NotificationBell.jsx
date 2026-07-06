@@ -1,13 +1,16 @@
 import { Bell, CheckCircle2, CircleDollarSign, Landmark, UserPlus } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { useCloseOnOutside } from '../../utils/useCloseOnOutside'
 import { formatDateTime } from '../../utils/formatDateTime'
 
 export function NotificationBell({ notifications }) {
   const [isOpen, setIsOpen] = useState(false)
+  const bellRef = useRef(null)
   const recentNotifications = useMemo(() => notifications.slice(0, 5), [notifications])
+  useCloseOnOutside(bellRef, isOpen, () => setIsOpen(false))
 
   return (
-    <div className="notification-bell">
+    <div className="notification-bell" ref={bellRef}>
       <button
         className="icon-button"
         type="button"

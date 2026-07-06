@@ -14,8 +14,11 @@ import codehealthy.payflux.walletservice.models.Wallet;
 import codehealthy.payflux.walletservice.models.WalletStatus;
 import codehealthy.payflux.walletservice.models.WalletTransaction;
 import codehealthy.payflux.walletservice.models.WalletTransactionType;
+import codehealthy.payflux.walletservice.models.WalletTransfer;
+import codehealthy.payflux.walletservice.models.WalletTransferStatus;
 import codehealthy.payflux.walletservice.repositories.WalletRepository;
 import codehealthy.payflux.walletservice.repositories.WalletTransactionRepository;
+import codehealthy.payflux.walletservice.repositories.WalletTransferRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,22 +36,31 @@ public class WalletService {
 
 	private final WalletRepository walletRepository;
 	private final WalletTransactionRepository transactionRepository;
+	private final WalletTransferRepository transferRepository;
 	private final OutboxService outboxService;
 	private final TransferConfirmationService transferConfirmationService;
 	private final TransferRateLimitService transferRateLimitService;
+	private final TransferIdempotencyService transferIdempotencyService;
+	private final WalletLedgerService walletLedgerService;
 
 	public WalletService(
 			WalletRepository walletRepository,
 			WalletTransactionRepository transactionRepository,
+			WalletTransferRepository transferRepository,
 			OutboxService outboxService,
 			TransferConfirmationService transferConfirmationService,
-			TransferRateLimitService transferRateLimitService
+			TransferRateLimitService transferRateLimitService,
+			TransferIdempotencyService transferIdempotencyService,
+			WalletLedgerService walletLedgerService
 	) {
 		this.walletRepository = walletRepository;
 		this.transactionRepository = transactionRepository;
+		this.transferRepository = transferRepository;
 		this.outboxService = outboxService;
 		this.transferConfirmationService = transferConfirmationService;
 		this.transferRateLimitService = transferRateLimitService;
+		this.transferIdempotencyService = transferIdempotencyService;
+		this.walletLedgerService = walletLedgerService;
 	}
 
 	@Transactional
@@ -89,7 +101,7 @@ public class WalletService {
 		String reference = reference("DEP", request.idempotencyKey());
 		rejectDuplicateReference(reference);
 
-		wallet.credit(amount);
+		walletLedgerService.credit(wallet, reference, amount, "Test funding deposit");
 		transactionRepository.save(new WalletTransaction(
 				wallet,
 				null,
@@ -130,6 +142,24 @@ public class WalletService {
 		if (senderSnapshot.getAvailableBalance().compareTo(amount) < 0) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Insufficient wallet balance");
 		}
+		String idempotencyKey = requireText(request.idempotencyKey(), "idempotencyKey");
+		String reference = reference("TRF", idempotencyKey);
+		String description = optionalText(request.description(), "PayFlux transfer");
+
+		WalletTransfer transfer = transferRepository.findByOwnerUserIdAndIdempotencyKey(ownerUserId, idempotencyKey)
+				.orElseGet(() -> transferRepository.save(new WalletTransfer(
+						ownerUserId,
+						reference,
+						idempotencyKey,
+						senderSnapshot.getAccountNumber(),
+						receiver.getAccountNumber(),
+						amount,
+						senderSnapshot.getCurrency(),
+						description
+				)));
+		if (transfer.getStatus() == WalletTransferStatus.COMPLETED) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Transfer is already completed");
+		}
 
 		PendingTransfer pendingTransfer = transferConfirmationService.pendingTransfer(
 				ownerUserId,
@@ -138,8 +168,8 @@ public class WalletService {
 				receiver.getFullName(),
 				amount,
 				senderSnapshot.getCurrency(),
-				optionalText(request.description(), "PayFlux transfer"),
-				request.idempotencyKey()
+				description,
+				idempotencyKey
 		);
 
 		return transferConfirmationService.create(pendingTransfer);
@@ -147,18 +177,66 @@ public class WalletService {
 
 	@Transactional
 	public WalletDashboardResponse confirmTransfer(Long ownerUserId, ConfirmTransferRequest request) {
-		PendingTransfer pendingTransfer = transferConfirmationService.consume(
-				ownerUserId,
-				request.confirmationId(),
-				request.otp()
-		);
+		String idempotencyKey = requireText(request.idempotencyKey(), "idempotencyKey");
+		return transferIdempotencyService.findCompleted(ownerUserId, idempotencyKey)
+				.orElseGet(() -> confirmTransferOnce(ownerUserId, request, idempotencyKey));
+	}
 
-		return executeTransfer(ownerUserId, new TransferRequest(
-				pendingTransfer.receiverAccountNumber(),
-				pendingTransfer.amount(),
-				pendingTransfer.description(),
-				pendingTransfer.idempotencyKey()
-		));
+	private WalletDashboardResponse confirmTransferOnce(
+			Long ownerUserId,
+			ConfirmTransferRequest request,
+			String idempotencyKey
+	) {
+		String reference = reference("TRF", idempotencyKey);
+		if (transactionRepository.existsByTransactionReference(reference + "-D")) {
+			WalletDashboardResponse dashboard = findDashboard(ownerUserId);
+			transferIdempotencyService.complete(ownerUserId, idempotencyKey, dashboard);
+			return dashboard;
+		}
+
+		transferIdempotencyService.claim(ownerUserId, idempotencyKey);
+		try {
+			WalletTransfer transfer = transferRepository.findByOwnerUserIdAndIdempotencyKeyForUpdate(ownerUserId, idempotencyKey)
+					.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transfer confirmation state not found"));
+			if (transfer.getStatus() == WalletTransferStatus.COMPLETED) {
+				WalletDashboardResponse dashboard = findDashboard(ownerUserId);
+				transferIdempotencyService.complete(ownerUserId, idempotencyKey, dashboard);
+				return dashboard;
+			}
+			if (transfer.getStatus() == WalletTransferStatus.PROCESSING) {
+				throw new ResponseStatusException(HttpStatus.CONFLICT, "Transfer is already being processed. Please refresh shortly.");
+			}
+			transfer.markProcessing();
+
+			PendingTransfer pendingTransfer = transferConfirmationService.consume(
+					ownerUserId,
+					request.confirmationId(),
+					request.otp()
+			);
+			if (!idempotencyKey.equals(pendingTransfer.idempotencyKey())) {
+				transfer.markFailed("Transfer confirmation does not match this request");
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Transfer confirmation does not match this request");
+			}
+
+			WalletDashboardResponse dashboard = executeTransfer(ownerUserId, new TransferRequest(
+					pendingTransfer.receiverAccountNumber(),
+					pendingTransfer.amount(),
+					pendingTransfer.description(),
+					pendingTransfer.idempotencyKey()
+			));
+			transfer.markCompleted();
+			transferIdempotencyService.complete(ownerUserId, idempotencyKey, dashboard);
+			return dashboard;
+		} catch (RuntimeException ex) {
+			transferRepository.findByOwnerUserIdAndIdempotencyKeyForUpdate(ownerUserId, idempotencyKey)
+					.ifPresent(transfer -> {
+						if (transfer.getStatus() == WalletTransferStatus.PROCESSING) {
+							transfer.markFailed(statusMessage(ex));
+						}
+					});
+			transferIdempotencyService.release(ownerUserId, idempotencyKey);
+			throw ex;
+		}
 	}
 
 	private WalletDashboardResponse executeTransfer(Long ownerUserId, TransferRequest request) {
@@ -197,10 +275,10 @@ public class WalletService {
 		String reference = reference("TRF", request.idempotencyKey());
 		rejectDuplicateReference(reference + "-D");
 
-		sender.debit(amount);
-		receiver.credit(amount);
-
 		String description = optionalText(request.description(), "PayFlux transfer");
+		walletLedgerService.debit(sender, reference + "-D", amount, description);
+		walletLedgerService.credit(receiver, reference + "-C", amount, description);
+
 		transactionRepository.save(new WalletTransaction(
 				sender,
 				receiver,
@@ -276,5 +354,15 @@ public class WalletService {
 		}
 
 		return value.trim();
+	}
+
+	private String statusMessage(RuntimeException exception) {
+		if (exception instanceof ResponseStatusException responseStatusException
+				&& responseStatusException.getReason() != null
+				&& !responseStatusException.getReason().isBlank()) {
+			return responseStatusException.getReason();
+		}
+
+		return "Transfer failed before completion";
 	}
 }

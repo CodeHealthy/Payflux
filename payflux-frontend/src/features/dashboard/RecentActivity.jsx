@@ -1,8 +1,9 @@
 import { EmptyState } from '../../components/EmptyState'
+import { payfluxAssets } from '../../assets/payfluxAssets'
 import { formatDateTime } from '../../utils/formatDateTime'
 import { formatMoney } from '../../utils/formatMoney'
 
-const emptyImage = '/assets/empty-states/no-transactions.png'
+const emptyImage = payfluxAssets.emptyStates.transactions
 
 export function RecentActivity({ transactions, notifications, currentUserId, isLoading }) {
   const items = [
@@ -12,6 +13,9 @@ export function RecentActivity({ transactions, notifications, currentUserId, isL
       detail: `${transaction.senderAccountNumber} to ${transaction.receiverAccountNumber}`,
       amount: formatMoney(transaction.amount, transaction.currency),
       tone: transaction.receiverUserId === currentUserId ? 'positive' : 'negative',
+      icon: transaction.receiverUserId === currentUserId
+        ? payfluxAssets.transactionIcons.transferReceived
+        : payfluxAssets.transactionIcons.transferSent,
       createdAt: transaction.completedAt,
     })),
     ...notifications.slice(0, 3).map((notification) => ({
@@ -20,6 +24,7 @@ export function RecentActivity({ transactions, notifications, currentUserId, isL
       detail: notification.message,
       amount: '',
       tone: 'neutral',
+      icon: payfluxAssets.security.shield,
       createdAt: notification.createdAt,
     })),
   ]
@@ -46,6 +51,7 @@ export function RecentActivity({ transactions, notifications, currentUserId, isL
         <div className="activity-list">
           {items.map((item) => (
             <article className="activity-item" key={item.id}>
+              <img className="activity-icon" src={item.icon} alt="" />
               <div>
                 <strong>{item.title}</strong>
                 <span>{item.detail}</span>

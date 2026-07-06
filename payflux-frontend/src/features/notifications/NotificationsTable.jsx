@@ -1,7 +1,8 @@
 import { EmptyState } from '../../components/EmptyState'
+import { payfluxAssets } from '../../assets/payfluxAssets'
 import { formatDateTime } from '../../utils/formatDateTime'
 
-const noTransactionsImage = '/assets/empty-states/no-transactions.png'
+const noNotificationsImage = payfluxAssets.emptyStates.notifications
 
 export function NotificationsTable({ notifications, isLoading }) {
   return (
@@ -15,7 +16,7 @@ export function NotificationsTable({ notifications, isLoading }) {
 
       {notifications.length === 0 ? (
         <EmptyState
-          imageSrc={noTransactionsImage}
+          imageSrc={noNotificationsImage}
           isLoading={isLoading}
           loadingText="Loading notifications..."
           text="No customer notifications yet."

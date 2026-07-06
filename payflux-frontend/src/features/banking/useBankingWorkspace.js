@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   AUTH_REQUIRED_EVENT,
   AuthRequiredError,
-} from '../api/httpClient'
+} from '../../api/httpClient'
+import { logoutUser } from '../../api/authApi'
 import {
   confirmWalletTransfer,
   createBeneficiary,
@@ -14,11 +15,11 @@ import {
   getTransactions,
   getWalletDashboard,
   prepareWalletTransfer,
-} from '../api/payfluxApi'
-import { clearSession, getStoredSession } from '../features/auth/authSession'
-import { routes } from './routes'
+} from '../../api/payfluxApi'
+import { clearSession, getStoredSession } from '../auth/authSession'
+import { bankingRoutes } from './bankingRoutes'
 
-export function usePayfluxDashboard() {
+export function useBankingWorkspace() {
   const [currentUser, setCurrentUser] = useState(() => getStoredSession()?.user || null)
   const [activeRoute, setActiveRoute] = useState('dashboard')
   const [accounts, setAccounts] = useState([])
@@ -136,6 +137,30 @@ export function usePayfluxDashboard() {
     }
   }, [handleAuthRequired])
 
+  useEffect(() => {
+    if (!successMessage) {
+      return undefined
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSuccessMessage('')
+    }, 3500)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [successMessage])
+
+  useEffect(() => {
+    if (!error) {
+      return undefined
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setError('')
+    }, 8000)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [error])
+
   async function handleCreateBeneficiary(formValues) {
     setError('')
     setSuccessMessage('')
@@ -220,7 +245,13 @@ export function usePayfluxDashboard() {
     }
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    try {
+      await logoutUser()
+    } catch {
+      // Local logout must still complete even if the network is unavailable.
+    }
+
     clearSession()
     setCurrentUser(null)
     resetDashboardState()
@@ -240,7 +271,7 @@ export function usePayfluxDashboard() {
   )
 
   const primaryAccount = accounts.at(0) || null
-  const currentRoute = routes.find((route) => route.id === activeRoute) || routes[0]
+  const currentRoute = bankingRoutes.find((route) => route.id === activeRoute) || bankingRoutes[0]
   const isAdmin = currentUser?.role === 'ADMIN'
 
   return {
@@ -276,6 +307,10 @@ export function usePayfluxDashboard() {
       handleDeposit,
       handlePrepareTransfer,
       handleConfirmTransfer,
+      dismissFeedback: () => {
+        setError('')
+        setSuccessMessage('')
+      },
     },
   }
 }

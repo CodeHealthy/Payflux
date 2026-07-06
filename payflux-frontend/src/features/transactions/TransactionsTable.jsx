@@ -1,8 +1,9 @@
 import { EmptyState } from '../../components/EmptyState'
+import { payfluxAssets } from '../../assets/payfluxAssets'
 import { formatDateTime } from '../../utils/formatDateTime'
 import { formatMoney } from '../../utils/formatMoney'
 
-const emptyImage = '/assets/empty-states/no-statements.png'
+const emptyImage = payfluxAssets.emptyStates.statements
 
 export function TransactionsTable({ transactions, currentUserId, isLoading }) {
   return (
@@ -42,7 +43,17 @@ export function TransactionsTable({ transactions, currentUserId, isLoading }) {
                 return (
                   <tr key={transaction.id}>
                     <td className="mono-cell">{transaction.transactionReference}</td>
-                    <td>{isIncoming ? 'Incoming' : 'Outgoing'}</td>
+                    <td>
+                      <span className={isIncoming ? 'direction-pill incoming' : 'direction-pill outgoing'}>
+                        <img
+                          src={isIncoming
+                            ? payfluxAssets.transactionIcons.transferReceived
+                            : payfluxAssets.transactionIcons.transferSent}
+                          alt=""
+                        />
+                        {isIncoming ? 'Incoming' : 'Outgoing'}
+                      </span>
+                    </td>
                     <td>{formatMoney(transaction.amount, transaction.currency)}</td>
                     <td className="mono-cell">{transaction.senderAccountNumber}</td>
                     <td className="mono-cell">{transaction.receiverAccountNumber}</td>

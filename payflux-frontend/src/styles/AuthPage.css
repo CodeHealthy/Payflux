@@ -1,0 +1,158 @@
+.auth-page {
+  display: grid;
+  grid-template-columns: minmax(340px, 0.95fr) minmax(360px, 0.75fr);
+  min-height: 100vh;
+}
+
+.auth-visual {
+  align-content: space-between;
+  background:
+    linear-gradient(135deg, rgba(4, 25, 65, 0.94), rgba(0, 108, 255, 0.72)),
+    url('/assets/hero-background/payflux-banking-dashboard-hero-1600x900.jpg') center / cover no-repeat;
+  color: #ffffff;
+  display: grid;
+  min-height: 100%;
+  padding: 42px;
+}
+
+.brand-lockup {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.brand-lockup strong,
+.brand-lockup span {
+  display: block;
+}
+
+.brand-lockup span {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+}
+
+.brand-logo {
+  border-radius: 8px;
+  display: block;
+  height: 42px;
+  object-fit: contain;
+  width: 42px;
+}
+
+.brand-logo.on-dark {
+  background: rgba(255, 255, 255, 0.12);
+  padding: 6px;
+}
+
+.brand-lockup.compact span {
+  color: #6b7280;
+}
+
+.brand-mark {
+  align-items: center;
+  background: #14b8a6;
+  border-radius: 8px;
+  color: #ffffff;
+  display: inline-flex;
+  font-weight: 800;
+  height: 42px;
+  justify-content: center;
+  width: 42px;
+}
+
+.bank-card-preview {
+  align-self: center;
+  background: rgba(4, 25, 65, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 8px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(12px);
+  padding: 28px;
+  width: min(420px, 100%);
+}
+
+.bank-card-preview span,
+.bank-card-preview small {
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.bank-card-preview strong {
+  display: block;
+  font-size: 34px;
+  letter-spacing: 0;
+  margin: 16px 0 34px;
+}
+
+.card-meta,
+.auth-metrics {
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+}
+
+.auth-metrics {
+  align-items: stretch;
+}
+
+.auth-metrics article {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  flex: 1;
+  padding: 16px;
+}
+
+.auth-metrics span {
+  color: rgba(255, 255, 255, 0.72);
+  display: block;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.auth-metrics strong {
+  font-size: 20px;
+}
+
+.auth-panel {
+  align-content: center;
+  background: #ffffff;
+  display: grid;
+  padding: 48px;
+}
+
+.auth-copy {
+  margin-bottom: 24px;
+}
+
+.auth-copy p:last-child {
+  color: #6b7280;
+  margin: 12px 0 0;
+}
+
+.auth-tabs {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 18px;
+  padding: 4px;
+}
+
+.auth-tabs button {
+  background: transparent;
+  color: #6b7280;
+}
+
+.auth-tabs button.active {
+  background: #ffffff;
+  color: #111827;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+.auth-form,
+.account-form {
+  display: grid;
+  gap: 16px;
+}

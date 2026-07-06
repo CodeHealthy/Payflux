@@ -1,4 +1,4 @@
-export const routes = [
+export const bankingRoutes = [
   { id: 'dashboard', label: 'Dashboard', title: 'Banking dashboard' },
   { id: 'accounts', label: 'Accounts', title: 'Accounts' },
   { id: 'wallets', label: 'Wallet', title: 'Wallet' },

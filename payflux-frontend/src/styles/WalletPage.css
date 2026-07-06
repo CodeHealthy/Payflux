@@ -1,0 +1,51 @@
+.wallet-workspace {
+  grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+}
+
+.wallet-actions-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.wallet-summary-panel {
+  align-content: start;
+}
+
+.wallet-balance-card {
+  background:
+    linear-gradient(135deg, rgba(4, 25, 65, 0.94), rgba(0, 108, 255, 0.76)),
+    url('/assets/user-account-visuals/bank-account-card-texture.png') center / cover no-repeat;
+  border-radius: 8px;
+  color: #ffffff;
+  display: grid;
+  gap: 18px;
+  min-height: 260px;
+  padding: 22px;
+}
+
+.wallet-balance-card span,
+.wallet-balance-card small {
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.wallet-balance-card strong {
+  color: #ffffff;
+  display: block;
+  font-size: clamp(28px, 4vw, 34px);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.wallet-balance-card b {
+  color: #ffffff;
+  display: block;
+  margin-top: 5px;
+}
+
+.wallet-balance-card .status-pill {
+  align-self: end;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  justify-self: start;
+}

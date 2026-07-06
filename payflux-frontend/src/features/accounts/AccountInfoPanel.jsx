@@ -1,7 +1,8 @@
 import { EmptyState } from '../../components/EmptyState'
+import { payfluxAssets } from '../../assets/payfluxAssets'
 import { formatDateTime } from '../../utils/formatDateTime'
 
-const pendingAccountImage = '/assets/empty-states/no-statements.png'
+const pendingAccountImage = payfluxAssets.emptyStates.wallet
 
 export function AccountInfoPanel({ account, isLoading, onRefresh }) {
   return (

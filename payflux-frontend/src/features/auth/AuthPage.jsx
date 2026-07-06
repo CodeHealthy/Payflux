@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { loginUser, registerUser } from '../../api/authApi'
+import { payfluxAssets } from '../../assets/payfluxAssets'
 import { saveSession } from './authSession'
+import '../../styles/AuthPage.css'
 
 const emptyForm = {
   fullName: '',
@@ -61,7 +63,7 @@ export function AuthPage({ onAuthenticated }) {
         <div className="brand-lockup">
           <img
             className="brand-logo on-dark"
-            src="/assets/logos/payflux-icon-transparent.png"
+            src={payfluxAssets.logos.icon}
             alt=""
           />
           <div>

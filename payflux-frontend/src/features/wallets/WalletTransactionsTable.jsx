@@ -1,8 +1,9 @@
 import { EmptyState } from '../../components/EmptyState'
+import { payfluxAssets } from '../../assets/payfluxAssets'
 import { formatDateTime } from '../../utils/formatDateTime'
 import { formatMoney } from '../../utils/formatMoney'
 
-const emptyImage = '/assets/empty-states/no-notifications.png'
+const emptyImage = payfluxAssets.emptyStates.transactions
 
 export function WalletTransactionsTable({ walletDashboard, isLoading }) {
   const transactions = walletDashboard?.transactions || []
@@ -38,16 +39,32 @@ export function WalletTransactionsTable({ walletDashboard, isLoading }) {
               </tr>
             </thead>
             <tbody>
-              {transactions.map((transaction) => (
-                <tr key={transaction.id}>
-                  <td className="mono-cell">{transaction.transactionReference}</td>
-                  <td>{transaction.type}</td>
-                  <td>{formatMoney(transaction.amount, currency)}</td>
-                  <td className="mono-cell">{transaction.counterpartyAccountNumber || 'None'}</td>
-                  <td><span className="status-pill">{transaction.status}</span></td>
-                  <td>{formatDateTime(transaction.createdAt)}</td>
-                </tr>
-              ))}
+              {transactions.map((transaction) => {
+                const isCredit = transaction.type.includes('CREDIT') || transaction.type === 'DEPOSIT'
+
+                return (
+                  <tr key={transaction.id}>
+                    <td className="mono-cell">{transaction.transactionReference}</td>
+                    <td>
+                      <span className={isCredit ? 'direction-pill incoming' : 'direction-pill outgoing'}>
+                        <img
+                          src={transaction.type === 'DEPOSIT'
+                            ? payfluxAssets.transactionIcons.deposit
+                            : isCredit
+                              ? payfluxAssets.transactionIcons.transferReceived
+                              : payfluxAssets.transactionIcons.transferSent}
+                          alt=""
+                        />
+                        {transaction.type}
+                      </span>
+                    </td>
+                    <td>{formatMoney(transaction.amount, currency)}</td>
+                    <td className="mono-cell">{transaction.counterpartyAccountNumber || 'None'}</td>
+                    <td><span className="status-pill">{transaction.status}</span></td>
+                    <td>{formatDateTime(transaction.createdAt)}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

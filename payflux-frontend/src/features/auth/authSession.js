@@ -1,25 +1,33 @@
-import { clearAccessToken, getAccessToken, saveAccessToken } from '../../api/httpClient'
+import {
+  clearAuthTokens,
+  getAccessToken,
+  getRefreshToken,
+  saveAccessToken,
+  saveRefreshToken,
+} from '../../api/httpClient'
 
 const USER_KEY = 'payflux.user'
 
 export function saveSession(authResponse) {
   saveAccessToken(authResponse.accessToken)
+  saveRefreshToken(authResponse.refreshToken)
   localStorage.setItem(USER_KEY, JSON.stringify(authResponse.user))
 }
 
 export function getStoredSession() {
   const accessToken = getAccessToken()
+  const refreshToken = getRefreshToken()
   const user = readStoredUser()
 
-  if (!accessToken || !user) {
+  if ((!accessToken && !refreshToken) || !user) {
     return null
   }
 
-  return { accessToken, user }
+  return { accessToken, refreshToken, user }
 }
 
 export function clearSession() {
-  clearAccessToken()
+  clearAuthTokens()
   localStorage.removeItem(USER_KEY)
 }
 
