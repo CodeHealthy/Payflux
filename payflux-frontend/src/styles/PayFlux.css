@@ -674,6 +674,38 @@ td {
   font-size: 24px;
 }
 
+.recipient-verification-actions {
+  display: grid;
+}
+
+.recipient-verification-card {
+  background: #ecfdf5;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+}
+
+.recipient-verification-card span {
+  color: #047857;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.recipient-verification-card strong {
+  color: #064e3b;
+}
+
+.recipient-verification-card p {
+  color: #166534;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 4px 0 0;
+}
+
 .form-actions {
   display: flex;
   gap: 10px;

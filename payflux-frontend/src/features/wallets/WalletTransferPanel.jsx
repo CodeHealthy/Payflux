@@ -2,22 +2,54 @@ import { useState } from 'react'
 import { formatDateTime } from '../../utils/formatDateTime'
 import { formatMoney } from '../../utils/formatMoney'
 
-export function WalletTransferPanel({ beneficiaries, isSubmitting, onPrepareTransfer, onConfirmTransfer }) {
+export function WalletTransferPanel({
+  beneficiaries,
+  isSubmitting,
+  isVerifyingRecipient,
+  onPrepareTransfer,
+  onConfirmTransfer,
+  onVerifyRecipient,
+}) {
   const [receiverAccountNumber, setReceiverAccountNumber] = useState('')
   const [amount, setAmount] = useState('1000')
   const [description, setDescription] = useState('PayFlux transfer')
   const [otp, setOtp] = useState('')
   const [confirmation, setConfirmation] = useState(null)
+  const [verifiedRecipient, setVerifiedRecipient] = useState(null)
+
+  const normalizedReceiverAccountNumber = receiverAccountNumber.trim()
+  const hasVerifiedRecipient = verifiedRecipient?.accountNumber === normalizedReceiverAccountNumber
 
   function handleBeneficiaryChange(event) {
     const accountNumber = event.target.value
     setReceiverAccountNumber(accountNumber)
+    setVerifiedRecipient(null)
+  }
+
+  function handleReceiverAccountNumberChange(event) {
+    setReceiverAccountNumber(event.target.value)
+    setVerifiedRecipient(null)
+  }
+
+  async function handleVerifyRecipient() {
+    if (!normalizedReceiverAccountNumber) {
+      return
+    }
+
+    const recipient = await onVerifyRecipient(normalizedReceiverAccountNumber)
+    if (recipient) {
+      setVerifiedRecipient(recipient)
+    }
   }
 
   async function handleSubmit(event) {
     event.preventDefault()
+    if (!hasVerifiedRecipient) {
+      return
+    }
+
     const transferConfirmation = await onPrepareTransfer({
-      receiverAccountNumber,
+      receiverAccountNumber: verifiedRecipient.accountNumber,
       amount: Number(amount),
       description,
       idempotencyKey: crypto.randomUUID(),
@@ -43,6 +75,7 @@ export function WalletTransferPanel({ beneficiaries, isSubmitting, onPrepareTran
       setAmount('1000')
       setDescription('PayFlux transfer')
       setOtp('')
+      setVerifiedRecipient(null)
     }
   }
 
@@ -136,11 +169,35 @@ export function WalletTransferPanel({ beneficiaries, isSubmitting, onPrepareTran
           Receiver account number
           <input
             value={receiverAccountNumber}
-            onChange={(event) => setReceiverAccountNumber(event.target.value)}
+            onChange={handleReceiverAccountNumberChange}
             placeholder="920100000001"
             required
           />
         </label>
+
+        <div className="recipient-verification-actions">
+          <button
+            className="secondary-button"
+            type="button"
+            disabled={!normalizedReceiverAccountNumber || isVerifyingRecipient}
+            onClick={handleVerifyRecipient}
+          >
+            {isVerifyingRecipient ? 'Verifying...' : 'Verify recipient'}
+          </button>
+        </div>
+
+        {hasVerifiedRecipient && (
+          <div className="recipient-verification-card">
+            <span>Verified PayFlux account</span>
+            <strong>{verifiedRecipient.displayName}</strong>
+            <small className="mono-cell">{verifiedRecipient.accountNumber}</small>
+            <p>
+              {verifiedRecipient.savedBeneficiary
+                ? 'This recipient is saved in your beneficiaries.'
+                : 'This recipient is not saved as a beneficiary yet.'}
+            </p>
+          </div>
+        )}
 
         <label>
           Amount
@@ -163,7 +220,7 @@ export function WalletTransferPanel({ beneficiaries, isSubmitting, onPrepareTran
           />
         </label>
 
-        <button className="primary-button" type="submit" disabled={isSubmitting}>
+        <button className="primary-button" type="submit" disabled={isSubmitting || !hasVerifiedRecipient}>
           {isSubmitting ? 'Sending...' : 'Send money'}
         </button>
       </form>

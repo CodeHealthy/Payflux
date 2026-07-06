@@ -31,6 +31,10 @@ export function getBeneficiaries() {
   return request('/api/beneficiaries')
 }
 
+export function verifyTransferRecipient(accountNumber) {
+  return request(`/api/beneficiaries/verify/${encodeURIComponent(accountNumber)}`)
+}
+
 export function getWalletDashboard() {
   return request('/api/wallets/me')
 }

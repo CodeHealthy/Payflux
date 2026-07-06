@@ -19,6 +19,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
   prepareWalletTransfer,
+  verifyTransferRecipient,
 } from '../../api/payfluxApi'
 import { clearSession, getStoredSession } from '../auth/authSession'
 import { bankingRoutes } from './bankingRoutes'
@@ -39,6 +40,7 @@ export function useBankingWorkspace() {
   const [isTransferring, setIsTransferring] = useState(false)
   const [isExportingStatement, setIsExportingStatement] = useState(false)
   const [isLoadingTransactionDetails, setIsLoadingTransactionDetails] = useState(false)
+  const [isVerifyingRecipient, setIsVerifyingRecipient] = useState(false)
   const [activeAction, setActiveAction] = useState('transfer')
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
@@ -235,6 +237,20 @@ export function useBankingWorkspace() {
     }
   }
 
+  async function handleVerifyRecipient(accountNumber) {
+    setError('')
+    setIsVerifyingRecipient(true)
+
+    try {
+      return await verifyTransferRecipient(accountNumber)
+    } catch (requestError) {
+      handleRequestError(requestError, handleAuthRequired, setError)
+      return null
+    } finally {
+      setIsVerifyingRecipient(false)
+    }
+  }
+
   async function handleExportStatement(formValues) {
     setError('')
     setSuccessMessage('')
@@ -375,6 +391,7 @@ export function useBankingWorkspace() {
       isTransferring,
       isExportingStatement,
       isLoadingTransactionDetails,
+      isVerifyingRecipient,
       error,
       successMessage,
       isAdmin,
@@ -390,6 +407,7 @@ export function useBankingWorkspace() {
       handleDeposit,
       handlePrepareTransfer,
       handleConfirmTransfer,
+      handleVerifyRecipient,
       handleExportStatement,
       handleViewTransaction,
       handleMarkNotificationRead,

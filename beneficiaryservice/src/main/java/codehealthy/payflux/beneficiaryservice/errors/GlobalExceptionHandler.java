@@ -97,6 +97,7 @@ public class GlobalExceptionHandler {
 		if (normalized.contains("token is missing userid")) return "TOKEN_MISSING_USER_ID";
 		if (normalized.contains("account number not found")) return "ACCOUNT_NUMBER_NOT_FOUND";
 		if (normalized.contains("beneficiary already exists")) return "BENEFICIARY_ALREADY_EXISTS";
+		if (normalized.contains("recipient account number is required")) return "RECIPIENT_ACCOUNT_REQUIRED";
 		if (normalized.contains("own account")) return "OWN_ACCOUNT_NOT_ALLOWED";
 		if (normalized.contains("beneficiary not found")) return "BENEFICIARY_NOT_FOUND";
 		if (normalized.contains("wallet is not ready")) return "WALLET_NOT_READY";

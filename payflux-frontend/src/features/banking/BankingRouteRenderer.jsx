@@ -81,12 +81,14 @@ export function BankingRouteRenderer({ state, actions }) {
           beneficiaries={state.beneficiaries}
           activeAction={state.activeAction}
           isTransferring={state.isTransferring}
+          isVerifyingRecipient={state.isVerifyingRecipient}
           isDepositing={state.isDepositing}
           isCreatingBeneficiary={state.isCreatingBeneficiary}
           onActionChange={actions.setActiveAction}
           onCopyAccountNumber={actions.handleCopyAccountNumber}
           onPrepareTransfer={actions.handlePrepareTransfer}
           onConfirmTransfer={actions.handleConfirmTransfer}
+          onVerifyRecipient={actions.handleVerifyRecipient}
           onDeposit={actions.handleDeposit}
           onCreateBeneficiary={actions.handleCreateBeneficiary}
         />

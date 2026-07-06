@@ -122,7 +122,7 @@ public class WalletService {
 		return executeTransfer(ownerUserId, request);
 	}
 
-	@Transactional(readOnly = true)
+	@Transactional
 	public TransferConfirmationResponse prepareTransfer(Long ownerUserId, TransferRequest request) {
 		transferRateLimitService.assertAllowed(ownerUserId);
 

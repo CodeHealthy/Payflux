@@ -2,6 +2,7 @@ package codehealthy.payflux.beneficiaryservice.controllers;
 
 import codehealthy.payflux.beneficiaryservice.dto.BeneficiaryResponse;
 import codehealthy.payflux.beneficiaryservice.dto.CreateBeneficiaryRequest;
+import codehealthy.payflux.beneficiaryservice.dto.RecipientVerificationResponse;
 import codehealthy.payflux.beneficiaryservice.services.BeneficiaryService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -48,6 +49,14 @@ public class BeneficiaryController {
 			@PathVariable Long beneficiaryId
 	) {
 		return beneficiaryService.findCurrentUserBeneficiary(currentUserId(jwt), beneficiaryId);
+	}
+
+	@GetMapping("/verify/{accountNumber}")
+	public RecipientVerificationResponse verifyRecipient(
+			@AuthenticationPrincipal Jwt jwt,
+			@PathVariable String accountNumber
+	) {
+		return beneficiaryService.verifyRecipient(currentUserId(jwt), jwt.getTokenValue(), accountNumber);
 	}
 
 	private Long currentUserId(Jwt jwt) {

@@ -17,12 +17,14 @@ export function DashboardPage({
   activeAction,
   isLoading,
   isTransferring,
+  isVerifyingRecipient,
   isDepositing,
   isCreatingBeneficiary,
   onActionChange,
   onCopyAccountNumber,
   onPrepareTransfer,
   onConfirmTransfer,
+  onVerifyRecipient,
   onDeposit,
   onCreateBeneficiary,
 }) {
@@ -43,8 +45,10 @@ export function DashboardPage({
             <WalletTransferPanel
               beneficiaries={beneficiaries}
               isSubmitting={isTransferring}
+              isVerifyingRecipient={isVerifyingRecipient}
               onPrepareTransfer={onPrepareTransfer}
               onConfirmTransfer={onConfirmTransfer}
+              onVerifyRecipient={onVerifyRecipient}
             />
           )}
           {activeAction === 'deposit' && (

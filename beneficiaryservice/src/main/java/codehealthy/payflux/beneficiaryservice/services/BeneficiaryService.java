@@ -4,6 +4,7 @@ import codehealthy.payflux.beneficiaryservice.clients.AccountLookupResponse;
 import codehealthy.payflux.beneficiaryservice.clients.AccountServiceClient;
 import codehealthy.payflux.beneficiaryservice.dto.BeneficiaryResponse;
 import codehealthy.payflux.beneficiaryservice.dto.CreateBeneficiaryRequest;
+import codehealthy.payflux.beneficiaryservice.dto.RecipientVerificationResponse;
 import codehealthy.payflux.beneficiaryservice.events.BeneficiaryAddedEvent;
 import codehealthy.payflux.beneficiaryservice.models.Beneficiary;
 import codehealthy.payflux.beneficiaryservice.models.BeneficiaryStatus;
@@ -73,5 +74,45 @@ public class BeneficiaryService {
 		return beneficiaryRepository.findByIdAndOwnerUserId(beneficiaryId, ownerUserId)
 				.map(BeneficiaryResponse::from)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Beneficiary not found"));
+	}
+
+	public RecipientVerificationResponse verifyRecipient(Long ownerUserId, String bearerToken, String accountNumber) {
+		AccountLookupResponse account = accountServiceClient.findByAccountNumber(requireAccountNumber(accountNumber), bearerToken);
+		if (ownerUserId.equals(account.ownerUserId())) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot transfer to your own account");
+		}
+
+		boolean savedBeneficiary = beneficiaryRepository.existsByOwnerUserIdAndBeneficiaryAccountNumber(
+				ownerUserId,
+				account.accountNumber()
+		);
+
+		return new RecipientVerificationResponse(
+				account.accountNumber(),
+				safeDisplayName(account.fullName()),
+				"PayFlux",
+				savedBeneficiary
+		);
+	}
+
+	private String requireAccountNumber(String accountNumber) {
+		if (accountNumber == null || accountNumber.isBlank()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Recipient account number is required");
+		}
+
+		return accountNumber.trim();
+	}
+
+	private String safeDisplayName(String fullName) {
+		if (fullName == null || fullName.isBlank()) {
+			return "PayFlux customer";
+		}
+
+		String[] parts = fullName.trim().split("\\s+");
+		if (parts.length == 1) {
+			return parts[0];
+		}
+
+		return parts[0] + " " + parts[parts.length - 1].charAt(0) + ".";
 	}
 }
