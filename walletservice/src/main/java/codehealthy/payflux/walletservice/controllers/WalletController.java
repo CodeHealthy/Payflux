@@ -2,6 +2,7 @@ package codehealthy.payflux.walletservice.controllers;
 
 import codehealthy.payflux.walletservice.dto.DepositRequest;
 import codehealthy.payflux.walletservice.dto.ConfirmTransferRequest;
+import codehealthy.payflux.walletservice.dto.ReverseTransferRequest;
 import codehealthy.payflux.walletservice.dto.TransferRequest;
 import codehealthy.payflux.walletservice.dto.TransferConfirmationResponse;
 import codehealthy.payflux.walletservice.dto.WalletDashboardResponse;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -49,6 +51,14 @@ public class WalletController {
 	@PostMapping("/transfers/confirm")
 	public WalletDashboardResponse confirmTransfer(@AuthenticationPrincipal Jwt jwt, @RequestBody ConfirmTransferRequest request) {
 		return walletService.confirmTransfer(currentUserId(jwt), request);
+	}
+
+	@PostMapping("/admin/transfers/{transactionReference}/reverse")
+	public WalletDashboardResponse reverseTransfer(
+			@PathVariable String transactionReference,
+			@RequestBody ReverseTransferRequest request
+	) {
+		return walletService.reverseTransfer(transactionReference, request);
 	}
 
 	private Long currentUserId(Jwt jwt) {

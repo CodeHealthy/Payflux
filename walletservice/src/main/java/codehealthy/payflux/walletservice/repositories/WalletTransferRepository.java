@@ -12,6 +12,10 @@ public interface WalletTransferRepository extends JpaRepository<WalletTransfer, 
 
 	Optional<WalletTransfer> findByTransactionReference(String transactionReference);
 
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("select transfer from WalletTransfer transfer where transfer.transactionReference = :transactionReference")
+	Optional<WalletTransfer> findByTransactionReferenceForUpdate(String transactionReference);
+
 	Optional<WalletTransfer> findByOwnerUserIdAndIdempotencyKey(Long ownerUserId, String idempotencyKey);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)

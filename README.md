@@ -218,6 +218,8 @@ Wallet money movement is recorded in `wallet_ledger_entries` before customer-fac
 
 Transfers are tracked separately in `wallet_transfers` as a lifecycle aggregate. A transfer starts as `PENDING_CONFIRMATION`, moves to `PROCESSING` during OTP confirmation, and ends as `COMPLETED` or `FAILED`. This keeps transfer orchestration state separate from immutable ledger entries and customer-facing statement rows.
 
+Admin transfer reversal is handled by creating new opposite ledger entries and marking the original transfer as `REVERSED`. Original debit and credit rows remain untouched, which preserves the accounting history needed for reconciliation and audit.
+
 To promote a local user during development:
 
 ```sql

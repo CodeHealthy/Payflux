@@ -110,6 +110,11 @@ public class WalletTransfer {
 		this.failureReason = failureReason;
 	}
 
+	public void markReversed(String reason) {
+		this.status = WalletTransferStatus.REVERSED;
+		this.failureReason = reason;
+	}
+
 	public Long getId() {
 		return id;
 	}

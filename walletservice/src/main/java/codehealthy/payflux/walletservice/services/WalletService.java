@@ -5,6 +5,7 @@ import codehealthy.payflux.events.TransferCompletedEvent;
 import codehealthy.payflux.walletservice.dto.DepositRequest;
 import codehealthy.payflux.walletservice.dto.ConfirmTransferRequest;
 import codehealthy.payflux.walletservice.dto.PendingTransfer;
+import codehealthy.payflux.walletservice.dto.ReverseTransferRequest;
 import codehealthy.payflux.walletservice.dto.TransferRequest;
 import codehealthy.payflux.walletservice.dto.TransferConfirmationResponse;
 import codehealthy.payflux.walletservice.dto.WalletDashboardResponse;
@@ -180,6 +181,70 @@ public class WalletService {
 		String idempotencyKey = requireText(request.idempotencyKey(), "idempotencyKey");
 		return transferIdempotencyService.findCompleted(ownerUserId, idempotencyKey)
 				.orElseGet(() -> confirmTransferOnce(ownerUserId, request, idempotencyKey));
+	}
+
+	@Transactional
+	public WalletDashboardResponse reverseTransfer(String transactionReference, ReverseTransferRequest request) {
+		String reference = requireText(transactionReference, "transactionReference");
+		WalletTransfer transfer = transferRepository.findByTransactionReferenceForUpdate(reference)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transfer not found"));
+
+		if (transfer.getStatus() == WalletTransferStatus.REVERSED) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Transfer is already reversed");
+		}
+		if (transfer.getStatus() != WalletTransferStatus.COMPLETED) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Only completed transfers can be reversed");
+		}
+
+		List<Wallet> lockedWallets = walletRepository.findByAccountNumberInForUpdate(
+				List.of(transfer.getSenderAccountNumber(), transfer.getReceiverAccountNumber())
+		);
+		if (lockedWallets.size() != 2) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Transfer wallet not found");
+		}
+
+		Wallet sender = lockedWallets.stream()
+				.filter(wallet -> wallet.getAccountNumber().equals(transfer.getSenderAccountNumber()))
+				.findFirst()
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transfer sender wallet not found"));
+		Wallet receiver = lockedWallets.stream()
+				.filter(wallet -> wallet.getAccountNumber().equals(transfer.getReceiverAccountNumber()))
+				.findFirst()
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transfer receiver wallet not found"));
+
+		assertActive(sender);
+		assertActive(receiver);
+
+		String reversalReason = optionalText(request == null ? null : request.reason(), "Transfer reversed by admin");
+		String reversalReference = "REV-" + reference;
+		rejectDuplicateReference(reversalReference + "-D");
+
+		walletLedgerService.debit(receiver, reversalReference + "-D", transfer.getAmount(), reversalReason);
+		walletLedgerService.credit(sender, reversalReference + "-C", transfer.getAmount(), reversalReason);
+
+		transactionRepository.save(new WalletTransaction(
+				receiver,
+				sender,
+				reversalReference + "-D",
+				WalletTransactionType.REVERSAL_DEBIT,
+				transfer.getAmount(),
+				receiver.getCurrency(),
+				reversalReason,
+				sender.getAccountNumber()
+		));
+		transactionRepository.save(new WalletTransaction(
+				sender,
+				receiver,
+				reversalReference + "-C",
+				WalletTransactionType.REVERSAL_CREDIT,
+				transfer.getAmount(),
+				sender.getCurrency(),
+				reversalReason,
+				receiver.getAccountNumber()
+		));
+		transfer.markReversed(reversalReason);
+
+		return findDashboard(sender.getOwnerUserId());
 	}
 
 	private WalletDashboardResponse confirmTransferOnce(

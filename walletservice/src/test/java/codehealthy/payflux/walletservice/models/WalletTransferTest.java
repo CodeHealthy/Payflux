@@ -33,6 +33,17 @@ class WalletTransferTest {
 		assertThat(transfer.getFailureReason()).isEqualTo("Invalid transfer confirmation code");
 	}
 
+	@Test
+	void reversedTransferStoresReversalReason() {
+		WalletTransfer transfer = transfer();
+
+		transfer.markCompleted();
+		transfer.markReversed("Customer dispute accepted");
+
+		assertThat(transfer.getStatus()).isEqualTo(WalletTransferStatus.REVERSED);
+		assertThat(transfer.getFailureReason()).isEqualTo("Customer dispute accepted");
+	}
+
 	private WalletTransfer transfer() {
 		return new WalletTransfer(
 				10L,
