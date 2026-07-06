@@ -1,18 +1,24 @@
 import { payfluxAssets } from '../../assets/payfluxAssets'
 import { bankingRoutes } from './bankingRoutes'
 
-export function BankingNavigation({ activeRoute, isAdmin, onRouteChange }) {
+export function BankingNavigation({ activeRoute, isAdmin, userActions, onRouteChange }) {
   return (
     <aside className="sidebar">
-      <div className="brand-lockup compact">
-        <img
-          className="brand-logo"
-          src={payfluxAssets.logos.icon}
-          alt=""
-        />
-        <div>
-          <strong>PayFlux</strong>
-          <span>Banking OS</span>
+      <div className="mobile-topbar">
+        <div className="brand-lockup compact">
+          <img
+            className="brand-logo"
+            src={payfluxAssets.logos.icon}
+            alt=""
+          />
+          <div>
+            <strong>PayFlux</strong>
+            <span>Banking OS</span>
+          </div>
+        </div>
+
+        <div className="mobile-topbar-actions">
+          {userActions}
         </div>
       </div>
 

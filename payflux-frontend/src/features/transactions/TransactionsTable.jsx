@@ -34,7 +34,7 @@ export function TransactionsTable({
         />
       ) : (
         <div className="table-wrap">
-          <table>
+          <table className="transaction-card-table">
             <thead>
               <tr>
                 <th>Reference</th>
@@ -56,8 +56,8 @@ export function TransactionsTable({
                     key={transaction.id}
                     onClick={() => onViewTransaction(transaction.transactionReference)}
                   >
-                    <td className="mono-cell">{transaction.transactionReference}</td>
-                    <td>
+                    <td className="mono-cell" data-label="Reference">{transaction.transactionReference}</td>
+                    <td data-label="Direction">
                       <span className={isIncoming ? 'direction-pill incoming' : 'direction-pill outgoing'}>
                         <img
                           src={isIncoming
@@ -68,11 +68,11 @@ export function TransactionsTable({
                         {isIncoming ? 'Incoming' : 'Outgoing'}
                       </span>
                     </td>
-                    <td>{formatMoney(transaction.amount, transaction.currency)}</td>
-                    <td className="mono-cell">{transaction.senderAccountNumber}</td>
-                    <td className="mono-cell">{transaction.receiverAccountNumber}</td>
-                    <td><span className="status-pill">{transaction.status}</span></td>
-                    <td>{formatDateTime(transaction.completedAt)}</td>
+                    <td data-label="Amount">{formatMoney(transaction.amount, transaction.currency)}</td>
+                    <td className="mono-cell" data-label="From">{transaction.senderAccountNumber}</td>
+                    <td className="mono-cell" data-label="To">{transaction.receiverAccountNumber}</td>
+                    <td data-label="Status"><span className="status-pill">{transaction.status}</span></td>
+                    <td data-label="Completed">{formatDateTime(transaction.completedAt)}</td>
                   </tr>
                 )
               })}

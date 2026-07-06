@@ -6,11 +6,25 @@ import { BankingNavigation } from './BankingNavigation'
 import { BankingRouteRenderer } from './BankingRouteRenderer'
 
 export function BankingShell({ state, actions }) {
+  function renderUserActions() {
+    return (
+    <>
+      <NotificationBell notifications={state.notifications} />
+      <UserAccountMenu
+        user={state.currentUser}
+        onRefresh={actions.loadDashboard}
+        onLogout={actions.handleLogout}
+      />
+    </>
+    )
+  }
+
   return (
     <div className="banking-layout">
       <BankingNavigation
         activeRoute={state.activeRoute}
         isAdmin={state.isAdmin}
+        userActions={renderUserActions()}
         onRouteChange={actions.setActiveRoute}
       />
 
@@ -26,12 +40,7 @@ export function BankingShell({ state, actions }) {
           </div>
 
           <div className="user-menu">
-            <NotificationBell notifications={state.notifications} />
-            <UserAccountMenu
-              user={state.currentUser}
-              onRefresh={actions.loadDashboard}
-              onLogout={actions.handleLogout}
-            />
+            {renderUserActions()}
           </div>
         </header>
 
