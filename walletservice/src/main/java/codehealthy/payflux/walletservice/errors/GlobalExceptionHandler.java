@@ -116,6 +116,8 @@ public class GlobalExceptionHandler {
 		if (normalized.contains("transfer is already reversed")) return "TRANSFER_ALREADY_REVERSED";
 		if (normalized.contains("only completed transfers can be reversed")) return "TRANSFER_NOT_REVERSIBLE";
 		if (normalized.contains("transfer wallet not found")) return "TRANSFER_WALLET_NOT_FOUND";
+		if (normalized.contains("statement start date must be before end date")) return "INVALID_STATEMENT_DATE_RANGE";
+		if (normalized.contains("statement date range cannot exceed")) return "STATEMENT_DATE_RANGE_TOO_LARGE";
 		if (normalized.contains("required")) return "REQUIRED_FIELD";
 		if (normalized.contains("authorization failed")) return "DOWNSTREAM_AUTHORIZATION_FAILED";
 		if (normalized.contains("service is unavailable")) return "DOWNSTREAM_SERVICE_UNAVAILABLE";

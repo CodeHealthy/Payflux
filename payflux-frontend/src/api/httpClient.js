@@ -24,10 +24,14 @@ export class ApiRequestError extends Error {
 }
 
 export async function request(path, options = {}) {
-  return sendRequest(path, options, true)
+  return sendRequest(path, options, true, readJson)
 }
 
-async function sendRequest(path, options = {}, canRefresh) {
+export async function requestText(path, options = {}) {
+  return sendRequest(path, options, true, (response) => response.text())
+}
+
+async function sendRequest(path, options = {}, canRefresh, readResponse) {
   const accessToken = getAccessToken()
   const correlationId = createCorrelationId()
 
@@ -46,7 +50,7 @@ async function sendRequest(path, options = {}, canRefresh) {
       if (canRefresh && shouldAttemptRefresh(path)) {
         const refreshed = await refreshAccessToken()
         if (refreshed) {
-          return sendRequest(path, options, false)
+          return sendRequest(path, options, false, readResponse)
         }
       }
 
@@ -64,6 +68,10 @@ async function sendRequest(path, options = {}, canRefresh) {
     throw await readError(response, correlationId)
   }
 
+  return readResponse(response)
+}
+
+async function readJson(response) {
   if (response.status === 204) {
     return null
   }

@@ -4,8 +4,10 @@ import codehealthy.payflux.events.TransferCompletedEvent;
 import codehealthy.payflux.transactionservice.dto.TransactionResponse;
 import codehealthy.payflux.transactionservice.models.Transaction;
 import codehealthy.payflux.transactionservice.repositories.TransactionRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -45,5 +47,21 @@ public class TransactionService {
 				.stream()
 				.map(TransactionResponse::from)
 				.toList();
+	}
+
+	@Transactional(readOnly = true)
+	public TransactionResponse findTransactionDetails(String transactionReference, Long ownerUserId, boolean admin) {
+		Transaction transaction = transactionRepository.findByTransactionReference(transactionReference)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found"));
+
+		if (!admin && !belongsToUser(transaction, ownerUserId)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Transaction access denied");
+		}
+
+		return TransactionResponse.from(transaction);
+	}
+
+	private boolean belongsToUser(Transaction transaction, Long ownerUserId) {
+		return transaction.getSenderUserId().equals(ownerUserId) || transaction.getReceiverUserId().equals(ownerUserId);
 	}
 }

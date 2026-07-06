@@ -43,7 +43,13 @@ export function BankingRouteRenderer({ state, actions }) {
         <StatementsPage
           {...commonPageProps}
           transactions={state.transactions}
+          selectedTransaction={state.selectedTransaction}
           currentUserId={state.currentUser.id}
+          isExportingStatement={state.isExportingStatement}
+          isLoadingTransactionDetails={state.isLoadingTransactionDetails}
+          onExportStatement={actions.handleExportStatement}
+          onViewTransaction={actions.handleViewTransaction}
+          onCloseTransactionDetails={actions.closeTransactionDetails}
         />
       )
     case 'notifications':

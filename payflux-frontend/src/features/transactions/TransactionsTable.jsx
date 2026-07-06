@@ -2,10 +2,19 @@ import { EmptyState } from '../../components/EmptyState'
 import { payfluxAssets } from '../../assets/payfluxAssets'
 import { formatDateTime } from '../../utils/formatDateTime'
 import { formatMoney } from '../../utils/formatMoney'
+import { TransactionReceiptPanel } from './TransactionReceiptPanel'
 
 const emptyImage = payfluxAssets.emptyStates.statements
 
-export function TransactionsTable({ transactions, currentUserId, isLoading }) {
+export function TransactionsTable({
+  transactions,
+  selectedTransaction,
+  currentUserId,
+  isLoading,
+  isLoadingDetails,
+  onViewTransaction,
+  onCloseTransactionDetails,
+}) {
   return (
     <section className="panel">
       <div className="panel-header">
@@ -13,6 +22,7 @@ export function TransactionsTable({ transactions, currentUserId, isLoading }) {
           <p className="eyebrow">Transaction service</p>
           <h2>Statements</h2>
         </div>
+        {isLoadingDetails ? <span className="status-pill">Loading receipt</span> : null}
       </div>
 
       {transactions.length === 0 ? (
@@ -41,7 +51,11 @@ export function TransactionsTable({ transactions, currentUserId, isLoading }) {
                 const isIncoming = transaction.receiverUserId === currentUserId
 
                 return (
-                  <tr key={transaction.id}>
+                  <tr
+                    className="clickable-row"
+                    key={transaction.id}
+                    onClick={() => onViewTransaction(transaction.transactionReference)}
+                  >
                     <td className="mono-cell">{transaction.transactionReference}</td>
                     <td>
                       <span className={isIncoming ? 'direction-pill incoming' : 'direction-pill outgoing'}>
@@ -66,6 +80,11 @@ export function TransactionsTable({ transactions, currentUserId, isLoading }) {
           </table>
         </div>
       )}
+      <TransactionReceiptPanel
+        transaction={selectedTransaction}
+        currentUserId={currentUserId}
+        onClose={onCloseTransactionDetails}
+      />
     </section>
   )
 }

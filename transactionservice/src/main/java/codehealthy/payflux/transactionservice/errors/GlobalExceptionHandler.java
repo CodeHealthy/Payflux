@@ -111,6 +111,8 @@ public class GlobalExceptionHandler {
 		if (normalized.contains("invalid transfer confirmation code")) return "INVALID_TRANSFER_CONFIRMATION_CODE";
 		if (normalized.contains("transfer confirmation locked")) return "TRANSFER_CONFIRMATION_LOCKED";
 		if (normalized.contains("transfer is already being processed")) return "TRANSFER_ALREADY_PROCESSING";
+		if (normalized.contains("transaction not found")) return "TRANSACTION_NOT_FOUND";
+		if (normalized.contains("transaction access denied")) return "TRANSACTION_ACCESS_DENIED";
 		if (normalized.contains("required")) return "REQUIRED_FIELD";
 		if (normalized.contains("authorization failed")) return "DOWNSTREAM_AUTHORIZATION_FAILED";
 		if (normalized.contains("service is unavailable")) return "DOWNSTREAM_SERVICE_UNAVAILABLE";

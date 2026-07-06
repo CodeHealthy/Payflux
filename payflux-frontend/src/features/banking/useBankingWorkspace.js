@@ -8,10 +8,12 @@ import {
   confirmWalletTransfer,
   createBeneficiary,
   depositToWallet,
+  exportWalletStatement,
   getAccounts,
   getAuditRecords,
   getBeneficiaries,
   getNotifications,
+  getTransactionDetails,
   getTransactions,
   getWalletDashboard,
   prepareWalletTransfer,
@@ -26,12 +28,15 @@ export function useBankingWorkspace() {
   const [beneficiaries, setBeneficiaries] = useState([])
   const [notifications, setNotifications] = useState([])
   const [transactions, setTransactions] = useState([])
+  const [selectedTransaction, setSelectedTransaction] = useState(null)
   const [auditRecords, setAuditRecords] = useState([])
   const [walletDashboard, setWalletDashboard] = useState(null)
   const [isLoading, setIsLoading] = useState(Boolean(currentUser))
   const [isCreatingBeneficiary, setIsCreatingBeneficiary] = useState(false)
   const [isDepositing, setIsDepositing] = useState(false)
   const [isTransferring, setIsTransferring] = useState(false)
+  const [isExportingStatement, setIsExportingStatement] = useState(false)
+  const [isLoadingTransactionDetails, setIsLoadingTransactionDetails] = useState(false)
   const [activeAction, setActiveAction] = useState('transfer')
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
@@ -41,6 +46,7 @@ export function useBankingWorkspace() {
     setBeneficiaries([])
     setNotifications([])
     setTransactions([])
+    setSelectedTransaction(null)
     setAuditRecords([])
     setWalletDashboard(null)
     setError('')
@@ -227,6 +233,36 @@ export function useBankingWorkspace() {
     }
   }
 
+  async function handleExportStatement(formValues) {
+    setError('')
+    setSuccessMessage('')
+    setIsExportingStatement(true)
+
+    try {
+      const csv = await exportWalletStatement(formValues)
+      downloadStatement(csv, formValues)
+      setSuccessMessage('Statement export downloaded')
+    } catch (requestError) {
+      handleRequestError(requestError, handleAuthRequired, setError)
+    } finally {
+      setIsExportingStatement(false)
+    }
+  }
+
+  async function handleViewTransaction(transactionReference) {
+    setError('')
+    setIsLoadingTransactionDetails(true)
+
+    try {
+      const transaction = await getTransactionDetails(transactionReference)
+      setSelectedTransaction(transaction)
+    } catch (requestError) {
+      handleRequestError(requestError, handleAuthRequired, setError)
+    } finally {
+      setIsLoadingTransactionDetails(false)
+    }
+  }
+
   function handleAuthenticated(user) {
     setCurrentUser(user)
     setSuccessMessage(`Signed in as ${user.fullName}`)
@@ -283,6 +319,7 @@ export function useBankingWorkspace() {
       beneficiaries,
       notifications,
       transactions,
+      selectedTransaction,
       auditRecords,
       walletDashboard,
       primaryAccount,
@@ -292,6 +329,8 @@ export function useBankingWorkspace() {
       isCreatingBeneficiary,
       isDepositing,
       isTransferring,
+      isExportingStatement,
+      isLoadingTransactionDetails,
       error,
       successMessage,
       isAdmin,
@@ -307,12 +346,27 @@ export function useBankingWorkspace() {
       handleDeposit,
       handlePrepareTransfer,
       handleConfirmTransfer,
+      handleExportStatement,
+      handleViewTransaction,
+      closeTransactionDetails: () => setSelectedTransaction(null),
       dismissFeedback: () => {
         setError('')
         setSuccessMessage('')
       },
     },
   }
+}
+
+function downloadStatement(csv, { from, to }) {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+  const downloadUrl = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = downloadUrl
+  anchor.download = `payflux-statement-${from || 'latest'}-to-${to || 'today'}.csv`
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  URL.revokeObjectURL(downloadUrl)
 }
 
 function collectResult(result, setter, failures) {
