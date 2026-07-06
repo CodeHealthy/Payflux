@@ -8,6 +8,18 @@ export function getNotifications() {
   return request('/api/notifications')
 }
 
+export function markNotificationRead(notificationId) {
+  return request(`/api/notifications/${notificationId}/read`, {
+    method: 'PATCH',
+  })
+}
+
+export function markAllNotificationsRead() {
+  return request('/api/notifications/read-all', {
+    method: 'PATCH',
+  })
+}
+
 export function createBeneficiary(payload) {
   return request('/api/beneficiaries', {
     method: 'POST',

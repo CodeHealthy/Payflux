@@ -8,14 +8,18 @@ import { BankingRouteRenderer } from './BankingRouteRenderer'
 export function BankingShell({ state, actions }) {
   function renderUserActions() {
     return (
-    <>
-      <NotificationBell notifications={state.notifications} />
-      <UserAccountMenu
-        user={state.currentUser}
-        onRefresh={actions.loadDashboard}
-        onLogout={actions.handleLogout}
-      />
-    </>
+      <>
+        <NotificationBell
+          notifications={state.notifications}
+          onMarkRead={actions.handleMarkNotificationRead}
+          onMarkAllRead={actions.handleMarkAllNotificationsRead}
+        />
+        <UserAccountMenu
+          user={state.currentUser}
+          onRefresh={actions.loadDashboard}
+          onLogout={actions.handleLogout}
+        />
+      </>
     )
   }
 

@@ -16,6 +16,8 @@ import {
   getTransactionDetails,
   getTransactions,
   getWalletDashboard,
+  markAllNotificationsRead,
+  markNotificationRead,
   prepareWalletTransfer,
 } from '../../api/payfluxApi'
 import { clearSession, getStoredSession } from '../auth/authSession'
@@ -263,6 +265,48 @@ export function useBankingWorkspace() {
     }
   }
 
+  async function handleMarkNotificationRead(notificationId) {
+    const previousNotifications = notifications
+
+    setNotifications((currentNotifications) => currentNotifications.map((notification) => (
+      notification.id === notificationId
+        ? { ...notification, unread: false, readAt: notification.readAt || new Date().toISOString() }
+        : notification
+    )))
+
+    try {
+      const updatedNotification = await markNotificationRead(notificationId)
+      setNotifications((currentNotifications) => currentNotifications.map((notification) => (
+        notification.id === notificationId ? updatedNotification : notification
+      )))
+    } catch (requestError) {
+      setNotifications(previousNotifications)
+      handleRequestError(requestError, handleAuthRequired, setError)
+    }
+  }
+
+  async function handleMarkAllNotificationsRead() {
+    if (notifications.every((notification) => !notification.unread)) {
+      return
+    }
+
+    const previousNotifications = notifications
+
+    setNotifications((currentNotifications) => currentNotifications.map((notification) => ({
+      ...notification,
+      unread: false,
+      readAt: notification.readAt || new Date().toISOString(),
+    })))
+
+    try {
+      const updatedNotifications = await markAllNotificationsRead()
+      setNotifications(updatedNotifications)
+    } catch (requestError) {
+      setNotifications(previousNotifications)
+      handleRequestError(requestError, handleAuthRequired, setError)
+    }
+  }
+
   function handleAuthenticated(user) {
     setCurrentUser(user)
     setSuccessMessage(`Signed in as ${user.fullName}`)
@@ -348,6 +392,8 @@ export function useBankingWorkspace() {
       handleConfirmTransfer,
       handleExportStatement,
       handleViewTransaction,
+      handleMarkNotificationRead,
+      handleMarkAllNotificationsRead,
       closeTransactionDetails: () => setSelectedTransaction(null),
       dismissFeedback: () => {
         setError('')

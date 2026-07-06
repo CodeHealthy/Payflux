@@ -3,10 +3,14 @@ import { useMemo, useRef, useState } from 'react'
 import { useCloseOnOutside } from '../../utils/useCloseOnOutside'
 import { formatDateTime } from '../../utils/formatDateTime'
 
-export function NotificationBell({ notifications }) {
+export function NotificationBell({ notifications, onMarkRead, onMarkAllRead }) {
   const [isOpen, setIsOpen] = useState(false)
   const bellRef = useRef(null)
   const recentNotifications = useMemo(() => notifications.slice(0, 5), [notifications])
+  const unreadCount = useMemo(
+    () => notifications.filter((notification) => notification.unread).length,
+    [notifications],
+  )
   useCloseOnOutside(bellRef, isOpen, () => setIsOpen(false))
 
   return (
@@ -19,14 +23,21 @@ export function NotificationBell({ notifications }) {
         onClick={() => setIsOpen((current) => !current)}
       >
         <Bell size={19} aria-hidden="true" />
-        {notifications.length > 0 && <span>{notifications.length}</span>}
+        {unreadCount > 0 && <span>{unreadCount}</span>}
       </button>
 
       {isOpen && (
         <section className="notification-menu" aria-label="Recent notifications">
           <div className="notification-menu-header">
-            <strong>Notifications</strong>
-            <small>{notifications.length} total</small>
+            <div>
+              <strong>Notifications</strong>
+              <small>{unreadCount} unread</small>
+            </div>
+            {unreadCount > 0 && (
+              <button className="text-button" type="button" onClick={onMarkAllRead}>
+                Mark all read
+              </button>
+            )}
           </div>
 
           {recentNotifications.length === 0 ? (
@@ -37,14 +48,24 @@ export function NotificationBell({ notifications }) {
           ) : (
             <div className="notification-list">
               {recentNotifications.map((notification) => (
-                <article className="notification-item" key={notification.id}>
+                <article
+                  className={notification.unread ? 'notification-item unread' : 'notification-item'}
+                  key={notification.id}
+                >
                   <div className="notification-icon">
                     <NotificationTypeIcon message={notification.message} />
                   </div>
                   <div>
                     <strong>{notificationTitle(notification.message)}</strong>
                     <p>{notificationMessageSummary(notification.message)}</p>
-                    <small>{formatDateTime(notification.createdAt)}</small>
+                    <footer>
+                      <small>{formatDateTime(notification.createdAt)}</small>
+                      {notification.unread && (
+                        <button type="button" onClick={() => onMarkRead(notification.id)}>
+                          Mark read
+                        </button>
+                      )}
+                    </footer>
                   </div>
                 </article>
               ))}

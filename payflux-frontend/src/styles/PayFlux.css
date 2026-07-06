@@ -192,6 +192,18 @@ button:disabled {
   color: #374151;
 }
 
+.text-button {
+  background: transparent;
+  color: #006cff;
+  font-size: 13px;
+  min-height: 0;
+  padding: 0;
+}
+
+.text-button:hover {
+  color: #0047aa;
+}
+
 .compact-button {
   min-height: 36px;
   padding: 0 12px;
@@ -283,6 +295,10 @@ button:disabled {
   text-align: left;
 }
 
+.notification-item.unread {
+  background: #f8fbff;
+}
+
 .notification-item + .notification-item {
   border-top: 1px solid #eef2f7;
 }
@@ -302,6 +318,21 @@ button:disabled {
 .notification-item small {
   color: #64748b;
   font-size: 12px;
+}
+
+.notification-item footer {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.notification-item footer button {
+  background: transparent;
+  color: #006cff;
+  font-size: 12px;
+  min-height: 0;
+  padding: 0;
 }
 
 .notification-icon {
@@ -557,6 +588,21 @@ td {
   font-weight: 800;
   line-height: 1;
   padding: 7px 9px;
+}
+
+.unread-pill {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.notification-row.unread {
+  background: #f8fbff;
+}
+
+.muted-text {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .account-info-panel {

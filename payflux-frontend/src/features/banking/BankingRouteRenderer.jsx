@@ -57,6 +57,8 @@ export function BankingRouteRenderer({ state, actions }) {
         <NotificationsPage
           {...commonPageProps}
           notifications={state.notifications}
+          onMarkRead={actions.handleMarkNotificationRead}
+          onMarkAllRead={actions.handleMarkAllNotificationsRead}
         />
       )
     case 'audit':

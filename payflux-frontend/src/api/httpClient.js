@@ -46,7 +46,7 @@ async function sendRequest(path, options = {}, canRefresh, readResponse) {
   })
 
   if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
+    if (response.status === 401) {
       if (canRefresh && shouldAttemptRefresh(path)) {
         const refreshed = await refreshAccessToken()
         if (refreshed) {

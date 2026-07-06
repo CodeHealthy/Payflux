@@ -35,6 +35,9 @@ public class Notification {
 	@Column(nullable = false)
 	private Instant createdAt;
 
+	@Column
+	private Instant readAt;
+
 	protected Notification() {
 	}
 
@@ -73,5 +76,19 @@ public class Notification {
 
 	public Instant getCreatedAt() {
 		return createdAt;
+	}
+
+	public Instant getReadAt() {
+		return readAt;
+	}
+
+	public boolean isUnread() {
+		return readAt == null;
+	}
+
+	public void markRead() {
+		if (readAt == null) {
+			readAt = Instant.now();
+		}
 	}
 }

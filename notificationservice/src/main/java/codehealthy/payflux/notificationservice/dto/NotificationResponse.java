@@ -10,7 +10,9 @@ public record NotificationResponse(
 		Long ownerUserId,
 		String email,
 		String message,
-		Instant createdAt
+		Instant createdAt,
+		Instant readAt,
+		boolean unread
 ) {
 	public static NotificationResponse from(Notification notification) {
 		return new NotificationResponse(
@@ -19,7 +21,9 @@ public record NotificationResponse(
 				notification.getOwnerUserId(),
 				notification.getEmail(),
 				notification.getMessage(),
-				notification.getCreatedAt()
+				notification.getCreatedAt(),
+				notification.getReadAt(),
+				notification.isUnread()
 		);
 	}
 }
