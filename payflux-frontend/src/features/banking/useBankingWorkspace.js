@@ -10,7 +10,9 @@ import {
   depositToWallet,
   exportWalletStatement,
   getAccounts,
+  getAdminUsers,
   getAuditRecords,
+  getAuditSummary,
   getBeneficiaries,
   getNotifications,
   getTransactionDetails,
@@ -32,7 +34,9 @@ export function useBankingWorkspace() {
   const [notifications, setNotifications] = useState([])
   const [transactions, setTransactions] = useState([])
   const [selectedTransaction, setSelectedTransaction] = useState(null)
+  const [adminUsers, setAdminUsers] = useState([])
   const [auditRecords, setAuditRecords] = useState([])
+  const [auditSummary, setAuditSummary] = useState(null)
   const [walletDashboard, setWalletDashboard] = useState(null)
   const [isLoading, setIsLoading] = useState(Boolean(currentUser))
   const [isCreatingBeneficiary, setIsCreatingBeneficiary] = useState(false)
@@ -51,7 +55,9 @@ export function useBankingWorkspace() {
     setNotifications([])
     setTransactions([])
     setSelectedTransaction(null)
+    setAdminUsers([])
     setAuditRecords([])
+    setAuditSummary(null)
     setWalletDashboard(null)
     setError('')
     setSuccessMessage('')
@@ -86,8 +92,12 @@ export function useBankingWorkspace() {
 
     if (canReadAuditRecords) {
       dashboardRequests.push(getAuditRecords())
+      dashboardRequests.push(getAuditSummary())
+      dashboardRequests.push(getAdminUsers())
     } else {
       setAuditRecords([])
+      setAuditSummary(null)
+      setAdminUsers([])
     }
 
     const results = await Promise.allSettled(dashboardRequests)
@@ -99,6 +109,8 @@ export function useBankingWorkspace() {
       walletResult,
       transactionResult,
       auditResult,
+      auditSummaryResult,
+      adminUsersResult,
     ] = results
     const failures = []
     const hasAuthFailure = results.some(
@@ -127,6 +139,12 @@ export function useBankingWorkspace() {
     collectResult(transactionResult, setTransactions, failures)
     if (canReadAuditRecords && auditResult) {
       collectResult(auditResult, setAuditRecords, failures)
+    }
+    if (canReadAuditRecords && auditSummaryResult) {
+      collectResult(auditSummaryResult, setAuditSummary, failures)
+    }
+    if (canReadAuditRecords && adminUsersResult) {
+      collectResult(adminUsersResult, setAdminUsers, failures)
     }
 
     setError([...new Set(failures)].join(' '))
@@ -380,7 +398,9 @@ export function useBankingWorkspace() {
       notifications,
       transactions,
       selectedTransaction,
+      adminUsers,
       auditRecords,
+      auditSummary,
       walletDashboard,
       primaryAccount,
       dashboardStats,

@@ -1,6 +1,7 @@
 package codehealthy.payflux.auditservice.services;
 
 import codehealthy.payflux.auditservice.dto.AuditRecordResponse;
+import codehealthy.payflux.auditservice.dto.AuditSummaryResponse;
 import codehealthy.payflux.auditservice.models.AuditRecord;
 import codehealthy.payflux.auditservice.repositories.AuditRecordRepository;
 import codehealthy.payflux.authservice.events.UserRegisteredEvent;
@@ -79,6 +80,19 @@ public class AuditService {
 				.stream()
 				.map(AuditRecordResponse::from)
 				.toList();
+	}
+
+	@Transactional(readOnly = true)
+	public AuditSummaryResponse getSummary() {
+		return new AuditSummaryResponse(
+				auditRecordRepository.count(),
+				auditRecordRepository.countByAction("USER_REGISTERED"),
+				auditRecordRepository.countByAction("TRANSFER_COMPLETED"),
+				auditRecordRepository.countByAction("BENEFICIARY_ADDED"),
+				auditRecordRepository.findFirstByOrderByCreatedAtDesc()
+						.map(AuditRecord::getCreatedAt)
+						.orElse(null)
+		);
 	}
 
 	private void saveIfNew(AuditRecord auditRecord) {

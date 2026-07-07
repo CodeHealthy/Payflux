@@ -33,6 +33,8 @@ export const payfluxAssets = {
   },
   admin: {
     auditLog: '/assets/admin-audit-visuals/audit-log.png',
-    shield: '/assets/admin-audit-visuals/admin-shield.png',
+    adminShield: '/assets/admin-audit-visuals/admin-shield.png',
+    compliance: '/assets/admin-audit-visuals/compliance.png',
+    systemActivity: '/assets/admin-audit-visuals/system-activity.png',
   },
 }

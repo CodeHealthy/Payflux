@@ -4,18 +4,23 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -38,9 +43,10 @@ public class SecurityConfig {
 				.authorizeHttpRequests(requests -> requests
 						.requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login", "/auth/refresh", "/auth/logout").permitAll()
 						.requestMatchers("/actuator/health", "/actuator/info").permitAll()
+						.requestMatchers("/auth/admin/**").hasRole("ADMIN")
 						.anyRequest().authenticated()
 				)
-				.oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+				.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
 				.build();
 	}
 
@@ -80,5 +86,15 @@ public class SecurityConfig {
 
 	private SecretKeySpec secretKey(String secret) {
 		return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+	}
+
+	private Converter<Jwt, ? extends AbstractAuthenticationToken> jwtAuthenticationConverter() {
+		return jwt -> {
+			String role = jwt.getClaimAsString("role");
+			List<SimpleGrantedAuthority> authorities = role == null
+					? List.of()
+					: List.of(new SimpleGrantedAuthority("ROLE_" + role));
+			return new JwtAuthenticationToken(jwt, authorities);
+		};
 	}
 }

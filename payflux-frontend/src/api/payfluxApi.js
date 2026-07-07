@@ -86,3 +86,11 @@ export function exportWalletStatement({ from, to }) {
 export function getAuditRecords() {
   return request('/api/audit-records')
 }
+
+export function getAuditSummary() {
+  return request('/api/audit-records/summary')
+}
+
+export function getAdminUsers() {
+  return request('/api/auth/admin/users')
+}

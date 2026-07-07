@@ -65,7 +65,9 @@ export function BankingRouteRenderer({ state, actions }) {
       return (
         <AuditRecordsPage
           {...commonPageProps}
+          users={state.adminUsers}
           auditRecords={state.auditRecords}
+          auditSummary={state.auditSummary}
         />
       )
     default:
