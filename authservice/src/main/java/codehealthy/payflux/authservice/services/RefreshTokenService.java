@@ -17,6 +17,7 @@ import java.util.Optional;
 public class RefreshTokenService {
 
 	private static final String REFRESH_TOKEN_PREFIX = "payflux:auth:refresh-token:";
+	private static final String USER_REFRESH_TOKEN_INDEX_PREFIX = "payflux:auth:user-refresh-tokens:";
 	private static final int REFRESH_TOKEN_BYTES = 48;
 
 	private final StringRedisTemplate redisTemplate;
@@ -33,23 +34,43 @@ public class RefreshTokenService {
 
 	public String issueToken(Long userId) {
 		String token = generateOpaqueToken();
-		redisTemplate.opsForValue().set(refreshTokenKey(token), userId.toString(), refreshTokenTtl);
+		String tokenHash = sha256(token);
+		redisTemplate.opsForValue().set(refreshTokenKey(tokenHash), userId.toString(), refreshTokenTtl);
+		redisTemplate.opsForSet().add(userTokenIndexKey(userId), tokenHash);
+		redisTemplate.expire(userTokenIndexKey(userId), refreshTokenTtl);
 		return token;
 	}
 
 	public Optional<Long> consumeToken(String refreshToken) {
-		String key = refreshTokenKey(refreshToken);
+		String tokenHash = sha256(refreshToken);
+		String key = refreshTokenKey(tokenHash);
 		String userId = redisTemplate.opsForValue().get(key);
 		if (userId == null) {
 			return Optional.empty();
 		}
 
 		redisTemplate.delete(key);
-		return Optional.of(Long.parseLong(userId));
+		Long parsedUserId = Long.parseLong(userId);
+		redisTemplate.opsForSet().remove(userTokenIndexKey(parsedUserId), tokenHash);
+		return Optional.of(parsedUserId);
 	}
 
 	public void revokeToken(String refreshToken) {
-		redisTemplate.delete(refreshTokenKey(refreshToken));
+		String tokenHash = sha256(refreshToken);
+		String userId = redisTemplate.opsForValue().get(refreshTokenKey(tokenHash));
+		redisTemplate.delete(refreshTokenKey(tokenHash));
+		if (userId != null) {
+			redisTemplate.opsForSet().remove(userTokenIndexKey(Long.parseLong(userId)), tokenHash);
+		}
+	}
+
+	public void revokeAllForUser(Long userId) {
+		String indexKey = userTokenIndexKey(userId);
+		var tokenHashes = redisTemplate.opsForSet().members(indexKey);
+		if (tokenHashes != null) {
+			tokenHashes.forEach(tokenHash -> redisTemplate.delete(refreshTokenKey(tokenHash)));
+		}
+		redisTemplate.delete(indexKey);
 	}
 
 	private String generateOpaqueToken() {
@@ -58,8 +79,12 @@ public class RefreshTokenService {
 		return Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
 	}
 
-	private String refreshTokenKey(String token) {
-		return REFRESH_TOKEN_PREFIX + sha256(token);
+	private String refreshTokenKey(String tokenHash) {
+		return REFRESH_TOKEN_PREFIX + tokenHash;
+	}
+
+	private String userTokenIndexKey(Long userId) {
+		return USER_REFRESH_TOKEN_INDEX_PREFIX + userId;
 	}
 
 	private String sha256(String value) {

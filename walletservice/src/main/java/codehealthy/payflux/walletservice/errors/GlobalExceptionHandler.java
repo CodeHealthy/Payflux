@@ -107,6 +107,7 @@ public class GlobalExceptionHandler {
 		if (normalized.contains("wallet is not active")) return "WALLET_NOT_ACTIVE";
 		if (normalized.contains("amount must be greater than zero")) return "INVALID_AMOUNT";
 		if (normalized.contains("duplicate wallet operation")) return "DUPLICATE_WALLET_OPERATION";
+		if (normalized.contains("idempotency key was already used")) return "IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_REQUEST";
 		if (normalized.contains("duplicate wallet ledger entry")) return "DUPLICATE_WALLET_LEDGER_ENTRY";
 		if (normalized.contains("transfer confirmation expired")) return "TRANSFER_CONFIRMATION_EXPIRED";
 		if (normalized.contains("invalid transfer confirmation code")) return "INVALID_TRANSFER_CONFIRMATION_CODE";

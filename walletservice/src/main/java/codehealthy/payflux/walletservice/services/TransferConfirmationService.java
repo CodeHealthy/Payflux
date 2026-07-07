@@ -51,8 +51,7 @@ public class TransferConfirmationService {
 				pendingTransfer.currency(),
 				pendingTransfer.description(),
 				pendingTransfer.expiresAt(),
-				pendingTransfer.idempotencyKey(),
-				pendingTransfer.otp()
+				pendingTransfer.idempotencyKey()
 		);
 	}
 
@@ -76,6 +75,7 @@ public class TransferConfirmationService {
 
 	public PendingTransfer pendingTransfer(
 			Long ownerUserId,
+			String email,
 			String senderAccountNumber,
 			String receiverAccountNumber,
 			String receiverName,
@@ -88,6 +88,7 @@ public class TransferConfirmationService {
 		return new PendingTransfer(
 				confirmationId,
 				ownerUserId,
+				email,
 				senderAccountNumber,
 				receiverAccountNumber,
 				receiverName,

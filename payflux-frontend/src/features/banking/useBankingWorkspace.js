@@ -3,7 +3,12 @@ import {
   AUTH_REQUIRED_EVENT,
   AuthRequiredError,
 } from '../../api/httpClient'
-import { logoutUser } from '../../api/authApi'
+import {
+  logoutUser,
+  updatePassword,
+  updateProfile,
+  updateSecurityQuestion,
+} from '../../api/authApi'
 import {
   activateAdminWallet,
   confirmWalletTransfer,
@@ -26,7 +31,7 @@ import {
   suspendAdminWallet,
   verifyTransferRecipient,
 } from '../../api/payfluxApi'
-import { clearSession, getStoredSession } from '../auth/authSession'
+import { clearSession, getStoredSession, saveUser } from '../auth/authSession'
 import { bankingRoutes } from './bankingRoutes'
 
 export function useBankingWorkspace() {
@@ -49,6 +54,7 @@ export function useBankingWorkspace() {
   const [isExportingStatement, setIsExportingStatement] = useState(false)
   const [isLoadingTransactionDetails, setIsLoadingTransactionDetails] = useState(false)
   const [isVerifyingRecipient, setIsVerifyingRecipient] = useState(false)
+  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false)
   const [activeAction, setActiveAction] = useState('transfer')
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
@@ -259,8 +265,16 @@ export function useBankingWorkspace() {
       await loadDashboard()
       return walletDetails
     } catch (requestError) {
-      handleRequestError(requestError, handleAuthRequired, setError)
-      return null
+      if (requestError instanceof AuthRequiredError) {
+        handleAuthRequired()
+        return null
+      }
+
+      return {
+        error: requestError.message,
+        code: requestError.code,
+        correlationId: requestError.correlationId,
+      }
     } finally {
       setIsTransferring(false)
     }
@@ -380,6 +394,63 @@ export function useBankingWorkspace() {
     }
   }
 
+  async function handleUpdateProfile(formValues) {
+    setError('')
+    setSuccessMessage('')
+    setIsUpdatingSettings(true)
+
+    try {
+      const updatedUser = await updateProfile(formValues)
+      saveUser(updatedUser)
+      setCurrentUser(updatedUser)
+      setSuccessMessage('Profile updated successfully')
+      return updatedUser
+    } catch (requestError) {
+      handleRequestError(requestError, handleAuthRequired, setError)
+      return null
+    } finally {
+      setIsUpdatingSettings(false)
+    }
+  }
+
+  async function handleUpdatePassword(formValues) {
+    setError('')
+    setSuccessMessage('')
+    setIsUpdatingSettings(true)
+
+    try {
+      await updatePassword(formValues)
+      clearSession()
+      setCurrentUser(null)
+      resetDashboardState()
+      return true
+    } catch (requestError) {
+      handleRequestError(requestError, handleAuthRequired, setError)
+      return false
+    } finally {
+      setIsUpdatingSettings(false)
+    }
+  }
+
+  async function handleUpdateSecurityQuestion(formValues) {
+    setError('')
+    setSuccessMessage('')
+    setIsUpdatingSettings(true)
+
+    try {
+      const updatedUser = await updateSecurityQuestion(formValues)
+      saveUser(updatedUser)
+      setCurrentUser(updatedUser)
+      setSuccessMessage('Recovery question updated successfully')
+      return updatedUser
+    } catch (requestError) {
+      handleRequestError(requestError, handleAuthRequired, setError)
+      return null
+    } finally {
+      setIsUpdatingSettings(false)
+    }
+  }
+
   function handleAuthenticated(user) {
     setCurrentUser(user)
     setSuccessMessage(`Signed in as ${user.fullName}`)
@@ -452,6 +523,7 @@ export function useBankingWorkspace() {
       isExportingStatement,
       isLoadingTransactionDetails,
       isVerifyingRecipient,
+      isUpdatingSettings,
       error,
       successMessage,
       isAdmin,
@@ -474,6 +546,9 @@ export function useBankingWorkspace() {
       handleMarkAllNotificationsRead,
       handleSuspendWallet,
       handleActivateWallet,
+      handleUpdateProfile,
+      handleUpdatePassword,
+      handleUpdateSecurityQuestion,
       closeTransactionDetails: () => setSelectedTransaction(null),
       dismissFeedback: () => {
         setError('')

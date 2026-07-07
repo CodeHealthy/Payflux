@@ -3,6 +3,7 @@ import { AuditRecordsPage } from '../../pages/AuditRecordsPage'
 import { BeneficiariesPage } from '../../pages/BeneficiariesPage'
 import { DashboardPage } from '../../pages/DashboardPage'
 import { NotificationsPage } from '../../pages/NotificationsPage'
+import { SettingsPage } from '../../pages/SettingsPage'
 import { StatementsPage } from '../../pages/StatementsPage'
 import { WalletPage } from '../../pages/WalletPage'
 
@@ -59,6 +60,17 @@ export function BankingRouteRenderer({ state, actions }) {
           notifications={state.notifications}
           onMarkRead={actions.handleMarkNotificationRead}
           onMarkAllRead={actions.handleMarkAllNotificationsRead}
+        />
+      )
+    case 'settings':
+      return (
+        <SettingsPage
+          {...commonPageProps}
+          currentUser={state.currentUser}
+          isUpdatingSettings={state.isUpdatingSettings}
+          onUpdateProfile={actions.handleUpdateProfile}
+          onUpdatePassword={actions.handleUpdatePassword}
+          onUpdateSecurityQuestion={actions.handleUpdateSecurityQuestion}
         />
       )
     case 'audit':

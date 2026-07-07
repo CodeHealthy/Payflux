@@ -1,9 +1,9 @@
-import { ChevronDown, LogOut, RefreshCw, ShieldCheck, UserRound } from 'lucide-react'
+import { ChevronDown, LogOut, RefreshCw, Settings, ShieldCheck, UserRound } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { payfluxAssets } from '../assets/payfluxAssets'
 import { useCloseOnOutside } from '../utils/useCloseOnOutside'
 
-export function UserAccountMenu({ user, onRefresh, onLogout }) {
+export function UserAccountMenu({ user, onRefresh, onLogout, onOpenSettings }) {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef(null)
 
@@ -17,6 +17,11 @@ export function UserAccountMenu({ user, onRefresh, onLogout }) {
   function handleLogout() {
     setIsOpen(false)
     onLogout()
+  }
+
+  function handleOpenSettings() {
+    setIsOpen(false)
+    onOpenSettings()
   }
 
   return (
@@ -58,6 +63,10 @@ export function UserAccountMenu({ user, onRefresh, onLogout }) {
           </div>
 
           <div className="account-menu-actions">
+            <button type="button" onClick={handleOpenSettings}>
+              <Settings size={16} aria-hidden="true" />
+              Account settings
+            </button>
             <button type="button" onClick={handleRefresh}>
               <RefreshCw size={16} aria-hidden="true" />
               Refresh dashboard

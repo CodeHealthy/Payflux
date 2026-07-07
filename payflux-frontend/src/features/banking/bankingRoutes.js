@@ -5,5 +5,6 @@ export const bankingRoutes = [
   { id: 'beneficiaries', label: 'Beneficiaries', title: 'Beneficiaries' },
   { id: 'transactions', label: 'Statements', title: 'Statements' },
   { id: 'notifications', label: 'Notifications', title: 'Notifications' },
+  { id: 'settings', label: 'Settings', title: 'Account settings' },
   { id: 'audit', label: 'Admin', title: 'Admin console', adminOnly: true },
 ]

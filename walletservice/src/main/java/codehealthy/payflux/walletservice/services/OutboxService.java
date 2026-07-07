@@ -2,6 +2,7 @@ package codehealthy.payflux.walletservice.services;
 
 import codehealthy.payflux.events.AdminWalletStatusChangedEvent;
 import codehealthy.payflux.events.TransferCompletedEvent;
+import codehealthy.payflux.events.TransferOtpRequestedEvent;
 import codehealthy.payflux.walletservice.models.OutboxEvent;
 import codehealthy.payflux.walletservice.repositories.OutboxEventRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -16,17 +17,20 @@ public class OutboxService {
 	private final ObjectMapper objectMapper;
 	private final String transferCompletedTopic;
 	private final String adminWalletStatusChangedTopic;
+	private final String transferOtpRequestedTopic;
 
 	public OutboxService(
 			OutboxEventRepository outboxEventRepository,
 			ObjectMapper objectMapper,
 			@Value("${app.kafka.topics.transfer-completed}") String transferCompletedTopic,
-			@Value("${app.kafka.topics.admin-wallet-status-changed}") String adminWalletStatusChangedTopic
+			@Value("${app.kafka.topics.admin-wallet-status-changed}") String adminWalletStatusChangedTopic,
+			@Value("${app.kafka.topics.transfer-otp-requested}") String transferOtpRequestedTopic
 	) {
 		this.outboxEventRepository = outboxEventRepository;
 		this.objectMapper = objectMapper;
 		this.transferCompletedTopic = transferCompletedTopic;
 		this.adminWalletStatusChangedTopic = adminWalletStatusChangedTopic;
+		this.transferOtpRequestedTopic = transferOtpRequestedTopic;
 	}
 
 	public void enqueueTransferCompleted(TransferCompletedEvent event) {
@@ -46,6 +50,17 @@ public class OutboxService {
 				adminWalletStatusChangedTopic,
 				AdminWalletStatusChangedEvent.class.getName(),
 				"WALLET",
+				event.ownerUserId().toString(),
+				toJson(event)
+		));
+	}
+
+	public void enqueueTransferOtpRequested(TransferOtpRequestedEvent event) {
+		outboxEventRepository.save(new OutboxEvent(
+				event.eventId(),
+				transferOtpRequestedTopic,
+				TransferOtpRequestedEvent.class.getName(),
+				"TRANSFER_OTP",
 				event.ownerUserId().toString(),
 				toJson(event)
 		));

@@ -28,8 +28,11 @@ public class WalletTransfer {
 	@Column(nullable = false, length = 80, unique = true)
 	private String transactionReference;
 
-	@Column(nullable = false, length = 120, unique = true)
+	@Column(nullable = false, length = 120)
 	private String idempotencyKey;
+
+	@Column(length = 64)
+	private String requestHash;
 
 	@Column(nullable = false, length = 32)
 	private String senderAccountNumber;
@@ -70,11 +73,13 @@ public class WalletTransfer {
 			String receiverAccountNumber,
 			BigDecimal amount,
 			String currency,
-			String description
+			String description,
+			String requestHash
 	) {
 		this.ownerUserId = ownerUserId;
 		this.transactionReference = transactionReference;
 		this.idempotencyKey = idempotencyKey;
+		this.requestHash = requestHash;
 		this.senderAccountNumber = senderAccountNumber;
 		this.receiverAccountNumber = receiverAccountNumber;
 		this.amount = amount;
@@ -115,6 +120,10 @@ public class WalletTransfer {
 		this.failureReason = reason;
 	}
 
+	public boolean hasSameRequestHash(String requestHash) {
+		return this.requestHash == null || this.requestHash.equals(requestHash);
+	}
+
 	public Long getId() {
 		return id;
 	}
@@ -129,6 +138,10 @@ public class WalletTransfer {
 
 	public String getIdempotencyKey() {
 		return idempotencyKey;
+	}
+
+	public String getRequestHash() {
+		return requestHash;
 	}
 
 	public String getSenderAccountNumber() {

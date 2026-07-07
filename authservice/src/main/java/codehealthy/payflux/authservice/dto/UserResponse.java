@@ -10,7 +10,8 @@ public record UserResponse(
 		String fullName,
 		String email,
 		UserRole role,
-		Instant createdAt
+		Instant createdAt,
+		boolean securityQuestionConfigured
 ) {
 	public static UserResponse from(AppUser user) {
 		return new UserResponse(
@@ -18,7 +19,8 @@ public record UserResponse(
 				user.getFullName(),
 				user.getEmail(),
 				user.getRole(),
-				user.getCreatedAt()
+				user.getCreatedAt(),
+				user.hasSecurityQuestion()
 		);
 	}
 }

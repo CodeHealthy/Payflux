@@ -31,6 +31,10 @@ export function clearSession() {
   localStorage.removeItem(USER_KEY)
 }
 
+export function saveUser(user) {
+  localStorage.setItem(USER_KEY, JSON.stringify(user))
+}
+
 function readStoredUser() {
   try {
     const value = localStorage.getItem(USER_KEY)

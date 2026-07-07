@@ -3,6 +3,7 @@ package codehealthy.payflux.walletservice.services;
 import codehealthy.payflux.events.AdminWalletStatusChangedEvent;
 import codehealthy.payflux.events.AccountCreatedEvent;
 import codehealthy.payflux.events.TransferCompletedEvent;
+import codehealthy.payflux.events.TransferOtpRequestedEvent;
 import codehealthy.payflux.walletservice.dto.DepositRequest;
 import codehealthy.payflux.walletservice.dto.ConfirmTransferRequest;
 import codehealthy.payflux.walletservice.dto.AdminWalletStatusRequest;
@@ -29,6 +30,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
 
@@ -156,6 +161,7 @@ public class WalletService {
 		String idempotencyKey = requireText(request.idempotencyKey(), "idempotencyKey");
 		String reference = reference("TRF", idempotencyKey);
 		String description = optionalText(request.description(), "PayFlux transfer");
+		String requestHash = transferRequestHash(receiver.getAccountNumber(), amount, description);
 
 		WalletTransfer transfer = transferRepository.findByOwnerUserIdAndIdempotencyKey(ownerUserId, idempotencyKey)
 				.orElseGet(() -> transferRepository.save(new WalletTransfer(
@@ -166,14 +172,17 @@ public class WalletService {
 						receiver.getAccountNumber(),
 						amount,
 						senderSnapshot.getCurrency(),
-						description
+						description,
+						requestHash
 				)));
+		assertSameTransferRequest(transfer, requestHash);
 		if (transfer.getStatus() == WalletTransferStatus.COMPLETED) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Transfer is already completed");
 		}
 
 		PendingTransfer pendingTransfer = transferConfirmationService.pendingTransfer(
 				ownerUserId,
+				senderSnapshot.getEmail(),
 				senderSnapshot.getAccountNumber(),
 				receiver.getAccountNumber(),
 				receiver.getFullName(),
@@ -183,7 +192,20 @@ public class WalletService {
 				idempotencyKey
 		);
 
-		return transferConfirmationService.create(pendingTransfer);
+		TransferConfirmationResponse confirmationResponse = transferConfirmationService.create(pendingTransfer);
+		outboxService.enqueueTransferOtpRequested(new TransferOtpRequestedEvent(
+				UUID.randomUUID().toString(),
+				ownerUserId,
+				senderSnapshot.getEmail(),
+				receiver.getFullName(),
+				receiver.getAccountNumber(),
+				amount,
+				senderSnapshot.getCurrency(),
+				pendingTransfer.otp(),
+				pendingTransfer.expiresAt(),
+				java.time.Instant.now()
+		));
+		return confirmationResponse;
 	}
 
 	@Transactional
@@ -315,7 +337,6 @@ public class WalletService {
 			if (transfer.getStatus() == WalletTransferStatus.PROCESSING) {
 				throw new ResponseStatusException(HttpStatus.CONFLICT, "Transfer is already being processed. Please refresh shortly.");
 			}
-			transfer.markProcessing();
 
 			PendingTransfer pendingTransfer = transferConfirmationService.consume(
 					ownerUserId,
@@ -326,6 +347,15 @@ public class WalletService {
 				transfer.markFailed("Transfer confirmation does not match this request");
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Transfer confirmation does not match this request");
 			}
+			assertSameTransferRequest(
+					transfer,
+					transferRequestHash(
+							pendingTransfer.receiverAccountNumber(),
+							pendingTransfer.amount(),
+							optionalText(pendingTransfer.description(), "PayFlux transfer")
+					)
+			);
+			transfer.markProcessing();
 
 			WalletDashboardResponse dashboard = executeTransfer(ownerUserId, new TransferRequest(
 					pendingTransfer.receiverAccountNumber(),
@@ -460,6 +490,29 @@ public class WalletService {
 	private void rejectDuplicateReference(String reference) {
 		if (transactionRepository.existsByTransactionReference(reference)) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Duplicate wallet operation");
+		}
+	}
+
+	private void assertSameTransferRequest(WalletTransfer transfer, String requestHash) {
+		if (!transfer.hasSameRequestHash(requestHash)) {
+			throw new ResponseStatusException(
+					HttpStatus.CONFLICT,
+					"Idempotency key was already used for a different transfer request"
+			);
+		}
+	}
+
+	private String transferRequestHash(String receiverAccountNumber, BigDecimal amount, String description) {
+		String canonicalRequest = requireText(receiverAccountNumber, "receiverAccountNumber")
+				+ "|"
+				+ requireMoney(amount).toPlainString()
+				+ "|"
+				+ optionalText(description, "PayFlux transfer");
+		try {
+			return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+					.digest(canonicalRequest.getBytes(StandardCharsets.UTF_8)));
+		} catch (NoSuchAlgorithmException exception) {
+			throw new IllegalStateException("SHA-256 is not available", exception);
 		}
 	}
 

@@ -151,6 +151,30 @@
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
 }
 
+.recovery-question-card {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+}
+
+.recovery-question-card span {
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.text-button {
+  background: transparent;
+  border: 0;
+  color: #2563eb;
+  font-weight: 800;
+  padding: 4px;
+}
+
 .auth-form,
 .account-form {
   display: grid;

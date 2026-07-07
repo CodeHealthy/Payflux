@@ -2,6 +2,7 @@ package codehealthy.payflux.notificationservice.services;
 
 import codehealthy.payflux.events.AccountCreatedEvent;
 import codehealthy.payflux.events.TransferCompletedEvent;
+import codehealthy.payflux.events.TransferOtpRequestedEvent;
 import codehealthy.payflux.notificationservice.dto.NotificationResponse;
 import codehealthy.payflux.notificationservice.models.Notification;
 import codehealthy.payflux.notificationservice.repositories.NotificationRepository;
@@ -16,9 +17,14 @@ import java.util.List;
 public class NotificationService {
 
 	private final NotificationRepository notificationRepository;
+	private final EmailDeliveryService emailDeliveryService;
 
-	public NotificationService(NotificationRepository notificationRepository) {
+	public NotificationService(
+			NotificationRepository notificationRepository,
+			EmailDeliveryService emailDeliveryService
+	) {
 		this.notificationRepository = notificationRepository;
+		this.emailDeliveryService = emailDeliveryService;
 	}
 
 	@Transactional
@@ -27,6 +33,30 @@ public class NotificationService {
 		Notification notification = new Notification(event.accountId(), event.ownerUserId(), event.email(), message);
 
 		notificationRepository.save(notification);
+	}
+
+	@Transactional
+	public void createTransferOtpNotification(TransferOtpRequestedEvent event) {
+		if (notificationRepository.existsByOwnerUserIdAndSourceEventId(event.ownerUserId(), event.eventId())) {
+			return;
+		}
+
+		String message = "Transfer confirmation code sent for "
+				+ event.currency() + " " + event.amount()
+				+ " to " + event.receiverAccountNumber() + ".";
+		notificationRepository.save(new Notification(
+				null,
+				event.ownerUserId(),
+				event.email(),
+				message,
+				event.eventId()
+		));
+
+		emailDeliveryService.send(
+				event.email(),
+				"PayFlux transfer confirmation code",
+				transferOtpEmailBody(event)
+		);
 	}
 
 	@Transactional
@@ -89,5 +119,30 @@ public class NotificationService {
 		notificationRepository.findByOwnerUserIdAndReadAtIsNullOrderByCreatedAtDesc(ownerUserId)
 				.forEach(Notification::markRead);
 		return findNotificationsForUser(ownerUserId);
+	}
+
+	private String transferOtpEmailBody(TransferOtpRequestedEvent event) {
+		return """
+				PayFlux transfer confirmation
+
+				Use this code to confirm your transfer:
+
+				%s
+
+				Transfer details:
+				Amount: %s %s
+				Recipient: %s
+				Recipient account: %s
+				Expires at: %s
+
+				If you did not request this transfer, do not share this code and contact PayFlux support.
+				""".formatted(
+				event.otp(),
+				event.currency(),
+				event.amount(),
+				event.receiverName(),
+				event.receiverAccountNumber(),
+				event.expiresAt()
+		);
 	}
 }

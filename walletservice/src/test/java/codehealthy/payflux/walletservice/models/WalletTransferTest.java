@@ -44,6 +44,14 @@ class WalletTransferTest {
 		assertThat(transfer.getFailureReason()).isEqualTo("Customer dispute accepted");
 	}
 
+	@Test
+	void transferMatchesOnlyItsOriginalRequestHash() {
+		WalletTransfer transfer = transfer();
+
+		assertThat(transfer.hasSameRequestHash("request-hash-1")).isTrue();
+		assertThat(transfer.hasSameRequestHash("request-hash-2")).isFalse();
+	}
+
 	private WalletTransfer transfer() {
 		return new WalletTransfer(
 				10L,
@@ -53,7 +61,8 @@ class WalletTransferTest {
 				"920000000002",
 				new BigDecimal("1000.00"),
 				"PKR",
-				"PayFlux transfer"
+				"PayFlux transfer",
+				"request-hash-1"
 		);
 	}
 }

@@ -2,6 +2,7 @@ package codehealthy.payflux.walletservice.services;
 
 import codehealthy.payflux.events.AdminWalletStatusChangedEvent;
 import codehealthy.payflux.events.TransferCompletedEvent;
+import codehealthy.payflux.events.TransferOtpRequestedEvent;
 import codehealthy.payflux.walletservice.models.OutboxEvent;
 import codehealthy.payflux.walletservice.models.OutboxEventStatus;
 import codehealthy.payflux.walletservice.repositories.OutboxEventRepository;
@@ -60,6 +61,9 @@ public class OutboxEventPublisher {
 		}
 		if (AdminWalletStatusChangedEvent.class.getName().equals(outboxEvent.getEventType())) {
 			return objectMapper.readValue(outboxEvent.getPayload(), AdminWalletStatusChangedEvent.class);
+		}
+		if (TransferOtpRequestedEvent.class.getName().equals(outboxEvent.getEventType())) {
+			return objectMapper.readValue(outboxEvent.getPayload(), TransferOtpRequestedEvent.class);
 		}
 
 		throw new IllegalArgumentException("Unsupported outbox event type " + outboxEvent.getEventType());

@@ -93,6 +93,11 @@ public class GlobalExceptionHandler {
 		String normalized = message.toLowerCase();
 		if (normalized.contains("email is already registered")) return "EMAIL_ALREADY_REGISTERED";
 		if (normalized.contains("invalid email or password")) return "INVALID_CREDENTIALS";
+		if (normalized.contains("no payflux user exists")) return "RECOVERY_USER_NOT_FOUND";
+		if (normalized.contains("password recovery is not configured")) return "PASSWORD_RECOVERY_NOT_CONFIGURED";
+		if (normalized.contains("security answer is incorrect")) return "SECURITY_ANSWER_INCORRECT";
+		if (normalized.contains("current password is incorrect")) return "CURRENT_PASSWORD_INCORRECT";
+		if (normalized.contains("user account is not available")) return "USER_ACCOUNT_NOT_AVAILABLE";
 		if (normalized.contains("refresh token is invalid or expired")) return "REFRESH_TOKEN_INVALID";
 		if (normalized.contains("refresh token user is no longer available")) return "REFRESH_TOKEN_USER_NOT_FOUND";
 		if (normalized.contains("too many failed login attempts")) return "TOO_MANY_LOGIN_ATTEMPTS";

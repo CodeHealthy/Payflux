@@ -26,4 +26,12 @@ public class KafkaTopicConfig {
 				.replicas(1)
 				.build();
 	}
+
+	@Bean
+	public NewTopic transferOtpRequestedTopic(@Value("${app.kafka.topics.transfer-otp-requested}") String topicName) {
+		return TopicBuilder.name(topicName)
+				.partitions(1)
+				.replicas(1)
+				.build();
+	}
 }

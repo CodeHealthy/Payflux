@@ -6,6 +6,7 @@ import java.time.Instant;
 public record PendingTransfer(
 		String confirmationId,
 		Long ownerUserId,
+		String email,
 		String senderAccountNumber,
 		String receiverAccountNumber,
 		String receiverName,

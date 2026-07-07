@@ -18,6 +18,7 @@ export function BankingShell({ state, actions }) {
           user={state.currentUser}
           onRefresh={actions.loadDashboard}
           onLogout={actions.handleLogout}
+          onOpenSettings={() => actions.setActiveRoute('settings')}
         />
       </>
     )

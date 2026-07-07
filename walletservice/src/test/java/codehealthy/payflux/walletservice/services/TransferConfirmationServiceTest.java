@@ -33,6 +33,7 @@ class TransferConfirmationServiceTest {
 		PendingTransfer pendingTransfer = new PendingTransfer(
 				"confirmation-1",
 				10L,
+				"ali@example.com",
 				"920000000001",
 				"920000000002",
 				"Ali Khan",
@@ -61,6 +62,7 @@ class TransferConfirmationServiceTest {
 		PendingTransfer pendingTransfer = new PendingTransfer(
 				"confirmation-1",
 				10L,
+				"ali@example.com",
 				"920000000001",
 				"920000000002",
 				"Ali Khan",

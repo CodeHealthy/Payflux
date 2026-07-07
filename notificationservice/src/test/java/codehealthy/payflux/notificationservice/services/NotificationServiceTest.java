@@ -17,7 +17,8 @@ import static org.mockito.Mockito.when;
 class NotificationServiceTest {
 
 	private final NotificationRepository notificationRepository = mock(NotificationRepository.class);
-	private final NotificationService notificationService = new NotificationService(notificationRepository);
+	private final EmailDeliveryService emailDeliveryService = mock(EmailDeliveryService.class);
+	private final NotificationService notificationService = new NotificationService(notificationRepository, emailDeliveryService);
 
 	@Test
 	void markReadSetsReadAtForOwnerNotification() {

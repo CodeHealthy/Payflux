@@ -1,0 +1,15 @@
+ALTER TABLE users
+	ADD COLUMN security_question VARCHAR(160);
+
+ALTER TABLE users
+	ADD COLUMN security_answer_hash VARCHAR(255);
+
+ALTER TABLE users
+	ADD COLUMN updated_at TIMESTAMP;
+
+UPDATE users
+	SET updated_at = created_at
+	WHERE updated_at IS NULL;
+
+ALTER TABLE users
+	ALTER COLUMN updated_at SET NOT NULL;
