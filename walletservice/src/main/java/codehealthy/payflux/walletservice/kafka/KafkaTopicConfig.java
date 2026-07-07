@@ -16,4 +16,14 @@ public class KafkaTopicConfig {
 				.replicas(1)
 				.build();
 	}
+
+	@Bean
+	public NewTopic adminWalletStatusChangedTopic(
+			@Value("${app.kafka.topics.admin-wallet-status-changed}") String topicName
+	) {
+		return TopicBuilder.name(topicName)
+				.partitions(1)
+				.replicas(1)
+				.build();
+	}
 }

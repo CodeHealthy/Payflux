@@ -66,8 +66,11 @@ export function BankingRouteRenderer({ state, actions }) {
         <AuditRecordsPage
           {...commonPageProps}
           users={state.adminUsers}
+          wallets={state.adminWallets}
           auditRecords={state.auditRecords}
           auditSummary={state.auditSummary}
+          onSuspendWallet={actions.handleSuspendWallet}
+          onActivateWallet={actions.handleActivateWallet}
         />
       )
     default:

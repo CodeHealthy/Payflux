@@ -209,6 +209,13 @@ button:disabled {
   padding: 0 12px;
 }
 
+.danger-soft-button {
+  background: #fef2f2;
+  color: #991b1b;
+  min-height: 36px;
+  padding: 0 12px;
+}
+
 .icon-button {
   align-items: center;
   background: #ffffff;
@@ -628,6 +635,33 @@ td {
   font-weight: 800;
   line-height: 1;
   padding: 7px 9px;
+}
+
+.status-pill.success {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.status-pill.warning {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.admin-wallet-cell {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.admin-wallet-cell strong {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.muted-cell {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .unread-pill {

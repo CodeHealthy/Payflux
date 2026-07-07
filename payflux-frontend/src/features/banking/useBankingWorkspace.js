@@ -5,12 +5,14 @@ import {
 } from '../../api/httpClient'
 import { logoutUser } from '../../api/authApi'
 import {
+  activateAdminWallet,
   confirmWalletTransfer,
   createBeneficiary,
   depositToWallet,
   exportWalletStatement,
   getAccounts,
   getAdminUsers,
+  getAdminWallets,
   getAuditRecords,
   getAuditSummary,
   getBeneficiaries,
@@ -21,6 +23,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
   prepareWalletTransfer,
+  suspendAdminWallet,
   verifyTransferRecipient,
 } from '../../api/payfluxApi'
 import { clearSession, getStoredSession } from '../auth/authSession'
@@ -35,6 +38,7 @@ export function useBankingWorkspace() {
   const [transactions, setTransactions] = useState([])
   const [selectedTransaction, setSelectedTransaction] = useState(null)
   const [adminUsers, setAdminUsers] = useState([])
+  const [adminWallets, setAdminWallets] = useState([])
   const [auditRecords, setAuditRecords] = useState([])
   const [auditSummary, setAuditSummary] = useState(null)
   const [walletDashboard, setWalletDashboard] = useState(null)
@@ -56,6 +60,7 @@ export function useBankingWorkspace() {
     setTransactions([])
     setSelectedTransaction(null)
     setAdminUsers([])
+    setAdminWallets([])
     setAuditRecords([])
     setAuditSummary(null)
     setWalletDashboard(null)
@@ -94,10 +99,12 @@ export function useBankingWorkspace() {
       dashboardRequests.push(getAuditRecords())
       dashboardRequests.push(getAuditSummary())
       dashboardRequests.push(getAdminUsers())
+      dashboardRequests.push(getAdminWallets())
     } else {
       setAuditRecords([])
       setAuditSummary(null)
       setAdminUsers([])
+      setAdminWallets([])
     }
 
     const results = await Promise.allSettled(dashboardRequests)
@@ -111,6 +118,7 @@ export function useBankingWorkspace() {
       auditResult,
       auditSummaryResult,
       adminUsersResult,
+      adminWalletsResult,
     ] = results
     const failures = []
     const hasAuthFailure = results.some(
@@ -145,6 +153,9 @@ export function useBankingWorkspace() {
     }
     if (canReadAuditRecords && adminUsersResult) {
       collectResult(adminUsersResult, setAdminUsers, failures)
+    }
+    if (canReadAuditRecords && adminWalletsResult) {
+      collectResult(adminWalletsResult, setAdminWallets, failures)
     }
 
     setError([...new Set(failures)].join(' '))
@@ -341,6 +352,34 @@ export function useBankingWorkspace() {
     }
   }
 
+  async function handleSuspendWallet(ownerUserId, reason) {
+    setError('')
+    setSuccessMessage('')
+
+    try {
+      const updatedWallet = await suspendAdminWallet(ownerUserId, reason)
+      setAdminWallets((currentWallets) => upsertWallet(currentWallets, updatedWallet))
+      setSuccessMessage(`Wallet ${updatedWallet.accountNumber} suspended`)
+      await loadDashboard()
+    } catch (requestError) {
+      handleRequestError(requestError, handleAuthRequired, setError)
+    }
+  }
+
+  async function handleActivateWallet(ownerUserId, reason) {
+    setError('')
+    setSuccessMessage('')
+
+    try {
+      const updatedWallet = await activateAdminWallet(ownerUserId, reason)
+      setAdminWallets((currentWallets) => upsertWallet(currentWallets, updatedWallet))
+      setSuccessMessage(`Wallet ${updatedWallet.accountNumber} activated`)
+      await loadDashboard()
+    } catch (requestError) {
+      handleRequestError(requestError, handleAuthRequired, setError)
+    }
+  }
+
   function handleAuthenticated(user) {
     setCurrentUser(user)
     setSuccessMessage(`Signed in as ${user.fullName}`)
@@ -399,6 +438,7 @@ export function useBankingWorkspace() {
       transactions,
       selectedTransaction,
       adminUsers,
+      adminWallets,
       auditRecords,
       auditSummary,
       walletDashboard,
@@ -432,6 +472,8 @@ export function useBankingWorkspace() {
       handleViewTransaction,
       handleMarkNotificationRead,
       handleMarkAllNotificationsRead,
+      handleSuspendWallet,
+      handleActivateWallet,
       closeTransactionDetails: () => setSelectedTransaction(null),
       dismissFeedback: () => {
         setError('')
@@ -439,6 +481,16 @@ export function useBankingWorkspace() {
       },
     },
   }
+}
+
+function upsertWallet(wallets, updatedWallet) {
+  if (wallets.some((wallet) => wallet.ownerUserId === updatedWallet.ownerUserId)) {
+    return wallets.map((wallet) => (
+      wallet.ownerUserId === updatedWallet.ownerUserId ? updatedWallet : wallet
+    ))
+  }
+
+  return [updatedWallet, ...wallets]
 }
 
 function downloadStatement(csv, { from, to }) {

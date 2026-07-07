@@ -1,9 +1,11 @@
 package codehealthy.payflux.walletservice.services;
 
+import codehealthy.payflux.events.AdminWalletStatusChangedEvent;
 import codehealthy.payflux.events.AccountCreatedEvent;
 import codehealthy.payflux.events.TransferCompletedEvent;
 import codehealthy.payflux.walletservice.dto.DepositRequest;
 import codehealthy.payflux.walletservice.dto.ConfirmTransferRequest;
+import codehealthy.payflux.walletservice.dto.AdminWalletStatusRequest;
 import codehealthy.payflux.walletservice.dto.PendingTransfer;
 import codehealthy.payflux.walletservice.dto.ReverseTransferRequest;
 import codehealthy.payflux.walletservice.dto.TransferRequest;
@@ -90,6 +92,14 @@ public class WalletService {
 				.toList();
 
 		return new WalletDashboardResponse(WalletResponse.from(wallet), transactions);
+	}
+
+	@Transactional(readOnly = true)
+	public List<WalletResponse> findAdminWallets() {
+		return walletRepository.findTop100ByOrderByUpdatedAtDesc()
+				.stream()
+				.map(WalletResponse::from)
+				.toList();
 	}
 
 	@Transactional
@@ -247,6 +257,40 @@ public class WalletService {
 		return findDashboard(sender.getOwnerUserId());
 	}
 
+	@Transactional
+	public WalletResponse suspendWallet(Long adminUserId, Long ownerUserId, AdminWalletStatusRequest request) {
+		Wallet wallet = walletRepository.findByOwnerUserIdForUpdate(ownerUserId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Wallet is not ready yet"));
+		if (wallet.getStatus() == WalletStatus.CLOSED) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Closed wallets cannot be suspended");
+		}
+		if (wallet.getStatus() == WalletStatus.SUSPENDED) {
+			return WalletResponse.from(wallet);
+		}
+
+		WalletStatus previousStatus = wallet.getStatus();
+		wallet.suspend();
+		enqueueWalletStatusAudit(adminUserId, wallet, previousStatus, request, "Wallet suspended by admin");
+		return WalletResponse.from(wallet);
+	}
+
+	@Transactional
+	public WalletResponse activateWallet(Long adminUserId, Long ownerUserId, AdminWalletStatusRequest request) {
+		Wallet wallet = walletRepository.findByOwnerUserIdForUpdate(ownerUserId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Wallet is not ready yet"));
+		if (wallet.getStatus() == WalletStatus.CLOSED) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Closed wallets cannot be activated");
+		}
+		if (wallet.getStatus() == WalletStatus.ACTIVE) {
+			return WalletResponse.from(wallet);
+		}
+
+		WalletStatus previousStatus = wallet.getStatus();
+		wallet.activate();
+		enqueueWalletStatusAudit(adminUserId, wallet, previousStatus, request, "Wallet activated by admin");
+		return WalletResponse.from(wallet);
+	}
+
 	private WalletDashboardResponse confirmTransferOnce(
 			Long ownerUserId,
 			ConfirmTransferRequest request,
@@ -384,6 +428,25 @@ public class WalletService {
 		if (wallet.getStatus() != WalletStatus.ACTIVE) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Wallet is not active");
 		}
+	}
+
+	private void enqueueWalletStatusAudit(
+			Long adminUserId,
+			Wallet wallet,
+			WalletStatus previousStatus,
+			AdminWalletStatusRequest request,
+			String fallbackReason
+	) {
+		outboxService.enqueueAdminWalletStatusChanged(new AdminWalletStatusChangedEvent(
+				UUID.randomUUID().toString(),
+				adminUserId,
+				wallet.getOwnerUserId(),
+				wallet.getAccountNumber(),
+				previousStatus.name(),
+				wallet.getStatus().name(),
+				optionalText(request == null ? null : request.reason(), fallbackReason),
+				java.time.Instant.now()
+		));
 	}
 
 	private BigDecimal requireMoney(BigDecimal amount) {

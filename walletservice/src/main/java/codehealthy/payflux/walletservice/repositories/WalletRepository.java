@@ -17,6 +17,8 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
 
 	Optional<Wallet> findByAccountNumber(String accountNumber);
 
+	List<Wallet> findTop100ByOrderByUpdatedAtDesc();
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select wallet from Wallet wallet where wallet.ownerUserId = :ownerUserId")
 	Optional<Wallet> findByOwnerUserIdForUpdate(Long ownerUserId);

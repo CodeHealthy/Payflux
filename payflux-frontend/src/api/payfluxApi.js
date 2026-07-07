@@ -94,3 +94,21 @@ export function getAuditSummary() {
 export function getAdminUsers() {
   return request('/api/auth/admin/users')
 }
+
+export function getAdminWallets() {
+  return request('/api/wallets/admin')
+}
+
+export function suspendAdminWallet(ownerUserId, reason) {
+  return request(`/api/wallets/admin/users/${ownerUserId}/suspend`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  })
+}
+
+export function activateAdminWallet(ownerUserId, reason) {
+  return request(`/api/wallets/admin/users/${ownerUserId}/activate`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  })
+}

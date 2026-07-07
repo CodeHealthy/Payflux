@@ -1,10 +1,21 @@
 import { EmptyState } from '../components/EmptyState'
 import { payfluxAssets } from '../assets/payfluxAssets'
 import { formatDateTime } from '../utils/formatDateTime'
+import { formatMoney } from '../utils/formatMoney'
 
 const emptyImage = payfluxAssets.admin.auditLog
 
-export function AuditRecordsPage({ auditRecords, auditSummary, users, isLoading }) {
+export function AuditRecordsPage({
+  auditRecords,
+  auditSummary,
+  users,
+  wallets,
+  isLoading,
+  onSuspendWallet,
+  onActivateWallet,
+}) {
+  const walletsByOwnerUserId = new Map(wallets.map((wallet) => [wallet.ownerUserId, wallet]))
+
   return (
     <div className="admin-console">
       <section className="admin-hero panel">
@@ -55,18 +66,50 @@ export function AuditRecordsPage({ auditRecords, auditSummary, users, isLoading 
                     <th>User</th>
                     <th>Email</th>
                     <th>Role</th>
+                    <th>Wallet</th>
+                    <th>Balance</th>
                     <th>Created</th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map((user) => (
-                    <tr key={user.id}>
-                      <td>{user.fullName}</td>
-                      <td>{user.email}</td>
-                      <td><span className="status-pill">{user.role}</span></td>
-                      <td>{formatDateTime(user.createdAt)}</td>
-                    </tr>
-                  ))}
+                  {users.map((user) => {
+                    const wallet = walletsByOwnerUserId.get(user.id)
+
+                    return (
+                      <tr key={user.id}>
+                        <td>{user.fullName}</td>
+                        <td>{user.email}</td>
+                        <td><span className="status-pill">{user.role}</span></td>
+                        <td>
+                          {wallet ? (
+                            <div className="admin-wallet-cell">
+                              <strong>{wallet.accountNumber}</strong>
+                              <span className={`status-pill ${wallet.status === 'ACTIVE' ? 'success' : 'warning'}`}>
+                                {wallet.status}
+                              </span>
+                            </div>
+                          ) : (
+                            'Not provisioned'
+                          )}
+                        </td>
+                        <td>
+                          {wallet
+                            ? formatMoney(wallet.availableBalance, wallet.currency)
+                            : 'None'}
+                        </td>
+                        <td>{formatDateTime(user.createdAt)}</td>
+                        <td>
+                          <AdminWalletAction
+                            user={user}
+                            wallet={wallet}
+                            onSuspendWallet={onSuspendWallet}
+                            onActivateWallet={onActivateWallet}
+                          />
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -129,4 +172,54 @@ function AdminMetric({ label, value }) {
       <strong>{value}</strong>
     </article>
   )
+}
+
+function AdminWalletAction({ user, wallet, onSuspendWallet, onActivateWallet }) {
+  if (!wallet || user.role === 'ADMIN') {
+    return <span className="muted-cell">No action</span>
+  }
+
+  if (wallet.status === 'ACTIVE') {
+    return (
+      <button
+        className="danger-soft-button"
+        type="button"
+        onClick={() => requestWalletReason({
+          actionLabel: 'Suspend wallet',
+          fallbackReason: 'Suspicious activity review',
+          onConfirm: (reason) => onSuspendWallet(user.id, reason),
+        })}
+      >
+        Suspend
+      </button>
+    )
+  }
+
+  if (wallet.status === 'SUSPENDED') {
+    return (
+      <button
+        className="compact-button"
+        type="button"
+        onClick={() => requestWalletReason({
+          actionLabel: 'Activate wallet',
+          fallbackReason: 'Review completed',
+          onConfirm: (reason) => onActivateWallet(user.id, reason),
+        })}
+      >
+        Activate
+      </button>
+    )
+  }
+
+  return <span className="muted-cell">Closed</span>
+}
+
+function requestWalletReason({ actionLabel, fallbackReason, onConfirm }) {
+  const reason = window.prompt(`${actionLabel} reason`, fallbackReason)
+
+  if (reason === null) {
+    return
+  }
+
+  onConfirm(reason.trim() || fallbackReason)
 }

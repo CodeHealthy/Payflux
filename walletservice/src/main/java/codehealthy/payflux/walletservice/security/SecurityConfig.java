@@ -36,6 +36,7 @@ public class SecurityConfig {
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(requests -> requests
 						.requestMatchers("/actuator/health", "/actuator/info").permitAll()
+						.requestMatchers("/wallets/admin").hasRole("ADMIN")
 						.requestMatchers("/wallets/admin/**").hasRole("ADMIN")
 						.anyRequest().authenticated()
 				)

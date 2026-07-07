@@ -1,11 +1,13 @@
 package codehealthy.payflux.walletservice.controllers;
 
+import codehealthy.payflux.walletservice.dto.AdminWalletStatusRequest;
 import codehealthy.payflux.walletservice.dto.DepositRequest;
 import codehealthy.payflux.walletservice.dto.ConfirmTransferRequest;
 import codehealthy.payflux.walletservice.dto.ReverseTransferRequest;
 import codehealthy.payflux.walletservice.dto.TransferRequest;
 import codehealthy.payflux.walletservice.dto.TransferConfirmationResponse;
 import codehealthy.payflux.walletservice.dto.WalletDashboardResponse;
+import codehealthy.payflux.walletservice.dto.WalletResponse;
 import codehealthy.payflux.walletservice.services.WalletService;
 import codehealthy.payflux.walletservice.services.WalletStatementService;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/wallets")
@@ -84,6 +87,29 @@ public class WalletController {
 			@RequestBody ReverseTransferRequest request
 	) {
 		return walletService.reverseTransfer(transactionReference, request);
+	}
+
+	@GetMapping("/admin")
+	public List<WalletResponse> findAdminWallets() {
+		return walletService.findAdminWallets();
+	}
+
+	@PostMapping("/admin/users/{ownerUserId}/suspend")
+	public WalletResponse suspendWallet(
+			@AuthenticationPrincipal Jwt jwt,
+			@PathVariable Long ownerUserId,
+			@RequestBody(required = false) AdminWalletStatusRequest request
+	) {
+		return walletService.suspendWallet(currentUserId(jwt), ownerUserId, request);
+	}
+
+	@PostMapping("/admin/users/{ownerUserId}/activate")
+	public WalletResponse activateWallet(
+			@AuthenticationPrincipal Jwt jwt,
+			@PathVariable Long ownerUserId,
+			@RequestBody(required = false) AdminWalletStatusRequest request
+	) {
+		return walletService.activateWallet(currentUserId(jwt), ownerUserId, request);
 	}
 
 	private Long currentUserId(Jwt jwt) {

@@ -91,6 +91,14 @@ public class Wallet {
 		this.availableBalance = this.availableBalance.subtract(amount);
 	}
 
+	public void suspend() {
+		this.status = WalletStatus.SUSPENDED;
+	}
+
+	public void activate() {
+		this.status = WalletStatus.ACTIVE;
+	}
+
 	public Long getId() {
 		return id;
 	}
