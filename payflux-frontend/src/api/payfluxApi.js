@@ -53,6 +53,12 @@ export function prepareWalletTransfer(payload) {
   })
 }
 
+export function resendWalletTransferOtp(confirmationId) {
+  return request(`/api/wallets/transfers/confirmations/${encodeURIComponent(confirmationId)}/resend`, {
+    method: 'POST',
+  })
+}
+
 export function confirmWalletTransfer(payload) {
   return request('/api/wallets/transfers/confirm', {
     method: 'POST',

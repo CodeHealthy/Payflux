@@ -8,9 +8,10 @@ public record TransferConfirmationResponse(
 		String receiverAccountNumber,
 		String receiverName,
 		BigDecimal amount,
-		String currency,
-		String description,
-		Instant expiresAt,
-		String idempotencyKey
+	String currency,
+	String description,
+	Instant expiresAt,
+	String idempotencyKey,
+	Instant resendAvailableAt
 ) {
 }

@@ -33,6 +33,7 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
@@ -48,6 +49,7 @@ public class WalletService {
 	private final OutboxService outboxService;
 	private final TransferConfirmationService transferConfirmationService;
 	private final TransferRateLimitService transferRateLimitService;
+	private final TransferOtpResendLimitService transferOtpResendLimitService;
 	private final TransferIdempotencyService transferIdempotencyService;
 	private final WalletLedgerService walletLedgerService;
 
@@ -58,6 +60,7 @@ public class WalletService {
 			OutboxService outboxService,
 			TransferConfirmationService transferConfirmationService,
 			TransferRateLimitService transferRateLimitService,
+			TransferOtpResendLimitService transferOtpResendLimitService,
 			TransferIdempotencyService transferIdempotencyService,
 			WalletLedgerService walletLedgerService
 	) {
@@ -67,6 +70,7 @@ public class WalletService {
 		this.outboxService = outboxService;
 		this.transferConfirmationService = transferConfirmationService;
 		this.transferRateLimitService = transferRateLimitService;
+		this.transferOtpResendLimitService = transferOtpResendLimitService;
 		this.transferIdempotencyService = transferIdempotencyService;
 		this.walletLedgerService = walletLedgerService;
 	}
@@ -192,20 +196,19 @@ public class WalletService {
 				idempotencyKey
 		);
 
-		TransferConfirmationResponse confirmationResponse = transferConfirmationService.create(pendingTransfer);
-		outboxService.enqueueTransferOtpRequested(new TransferOtpRequestedEvent(
-				UUID.randomUUID().toString(),
-				ownerUserId,
-				senderSnapshot.getEmail(),
-				receiver.getFullName(),
-				receiver.getAccountNumber(),
-				amount,
-				senderSnapshot.getCurrency(),
-				pendingTransfer.otp(),
-				pendingTransfer.expiresAt(),
-				java.time.Instant.now()
-		));
+		Instant resendAvailableAt = transferOtpResendLimitService.startInitialCooldown(ownerUserId, pendingTransfer.confirmationId());
+		TransferConfirmationResponse confirmationResponse = transferConfirmationService.create(pendingTransfer, resendAvailableAt);
+		enqueueTransferOtpRequested(pendingTransfer);
 		return confirmationResponse;
+	}
+
+	@Transactional
+	public TransferConfirmationResponse resendTransferOtp(Long ownerUserId, String confirmationId) {
+		String requiredConfirmationId = requireText(confirmationId, "confirmationId");
+		Instant resendAvailableAt = transferOtpResendLimitService.assertResendAllowed(ownerUserId, requiredConfirmationId);
+		PendingTransfer pendingTransfer = transferConfirmationService.resend(ownerUserId, requiredConfirmationId);
+		enqueueTransferOtpRequested(pendingTransfer);
+		return transferConfirmationService.response(pendingTransfer, resendAvailableAt);
 	}
 
 	@Transactional
@@ -347,6 +350,7 @@ public class WalletService {
 				transfer.markFailed("Transfer confirmation does not match this request");
 				throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Transfer confirmation does not match this request");
 			}
+			transferOtpResendLimitService.clear(ownerUserId, pendingTransfer.confirmationId());
 			assertSameTransferRequest(
 					transfer,
 					transferRequestHash(
@@ -476,6 +480,21 @@ public class WalletService {
 				wallet.getStatus().name(),
 				optionalText(request == null ? null : request.reason(), fallbackReason),
 				java.time.Instant.now()
+		));
+	}
+
+	private void enqueueTransferOtpRequested(PendingTransfer pendingTransfer) {
+		outboxService.enqueueTransferOtpRequested(new TransferOtpRequestedEvent(
+				UUID.randomUUID().toString(),
+				pendingTransfer.ownerUserId(),
+				pendingTransfer.email(),
+				pendingTransfer.receiverName(),
+				pendingTransfer.receiverAccountNumber(),
+				pendingTransfer.amount(),
+				pendingTransfer.currency(),
+				pendingTransfer.otp(),
+				pendingTransfer.expiresAt(),
+				Instant.now()
 		));
 	}
 

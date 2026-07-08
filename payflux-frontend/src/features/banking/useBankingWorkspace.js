@@ -28,6 +28,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
   prepareWalletTransfer,
+  resendWalletTransferOtp,
   suspendAdminWallet,
   verifyTransferRecipient,
 } from '../../api/payfluxApi'
@@ -54,6 +55,7 @@ export function useBankingWorkspace() {
   const [isExportingStatement, setIsExportingStatement] = useState(false)
   const [isLoadingTransactionDetails, setIsLoadingTransactionDetails] = useState(false)
   const [isVerifyingRecipient, setIsVerifyingRecipient] = useState(false)
+  const [isResendingTransferOtp, setIsResendingTransferOtp] = useState(false)
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false)
   const [activeAction, setActiveAction] = useState('transfer')
   const [error, setError] = useState('')
@@ -277,6 +279,31 @@ export function useBankingWorkspace() {
       }
     } finally {
       setIsTransferring(false)
+    }
+  }
+
+  async function handleResendTransferOtp(confirmationId) {
+    setError('')
+    setSuccessMessage('')
+    setIsResendingTransferOtp(true)
+
+    try {
+      const confirmation = await resendWalletTransferOtp(confirmationId)
+      setSuccessMessage('A new confirmation code has been sent to your email')
+      return confirmation
+    } catch (requestError) {
+      if (requestError instanceof AuthRequiredError) {
+        handleAuthRequired()
+        return null
+      }
+
+      return {
+        error: requestError.message,
+        code: requestError.code,
+        correlationId: requestError.correlationId,
+      }
+    } finally {
+      setIsResendingTransferOtp(false)
     }
   }
 
@@ -523,6 +550,7 @@ export function useBankingWorkspace() {
       isExportingStatement,
       isLoadingTransactionDetails,
       isVerifyingRecipient,
+      isResendingTransferOtp,
       isUpdatingSettings,
       error,
       successMessage,
@@ -539,6 +567,7 @@ export function useBankingWorkspace() {
       handleDeposit,
       handlePrepareTransfer,
       handleConfirmTransfer,
+      handleResendTransferOtp,
       handleVerifyRecipient,
       handleExportStatement,
       handleViewTransaction,

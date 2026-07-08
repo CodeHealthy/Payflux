@@ -39,10 +39,36 @@ public class TransferConfirmationService {
 		this.maxOtpAttempts = maxOtpAttempts;
 	}
 
-	public TransferConfirmationResponse create(PendingTransfer pendingTransfer) {
+	public TransferConfirmationResponse create(PendingTransfer pendingTransfer, Instant resendAvailableAt) {
 		String payload = toJson(pendingTransfer);
 		redisTemplate.opsForValue().set(key(pendingTransfer.ownerUserId(), pendingTransfer.confirmationId()), payload, confirmationTtl);
 
+		return response(pendingTransfer, resendAvailableAt);
+	}
+
+	public PendingTransfer resend(Long ownerUserId, String confirmationId) {
+		PendingTransfer existingTransfer = findPending(ownerUserId, confirmationId);
+		PendingTransfer refreshedTransfer = new PendingTransfer(
+				existingTransfer.confirmationId(),
+				existingTransfer.ownerUserId(),
+				existingTransfer.email(),
+				existingTransfer.senderAccountNumber(),
+				existingTransfer.receiverAccountNumber(),
+				existingTransfer.receiverName(),
+				existingTransfer.amount(),
+				existingTransfer.currency(),
+				existingTransfer.description(),
+				existingTransfer.idempotencyKey(),
+				otp(),
+				Instant.now().plus(confirmationTtl)
+		);
+
+		redisTemplate.opsForValue().set(key(ownerUserId, refreshedTransfer.confirmationId()), toJson(refreshedTransfer), confirmationTtl);
+		redisTemplate.delete(attemptKey(ownerUserId, refreshedTransfer.confirmationId()));
+		return refreshedTransfer;
+	}
+
+	public TransferConfirmationResponse response(PendingTransfer pendingTransfer, Instant resendAvailableAt) {
 		return new TransferConfirmationResponse(
 				pendingTransfer.confirmationId(),
 				pendingTransfer.receiverAccountNumber(),
@@ -51,7 +77,8 @@ public class TransferConfirmationService {
 				pendingTransfer.currency(),
 				pendingTransfer.description(),
 				pendingTransfer.expiresAt(),
-				pendingTransfer.idempotencyKey()
+				pendingTransfer.idempotencyKey(),
+				resendAvailableAt
 		);
 	}
 
@@ -99,6 +126,15 @@ public class TransferConfirmationService {
 				otp(),
 				Instant.now().plus(confirmationTtl)
 		);
+	}
+
+	private PendingTransfer findPending(Long ownerUserId, String confirmationId) {
+		String payload = redisTemplate.opsForValue().get(key(ownerUserId, requireText(confirmationId, "confirmationId")));
+		if (payload == null) {
+			throw new ResponseStatusException(HttpStatus.GONE, "Transfer confirmation expired");
+		}
+
+		return fromJson(payload);
 	}
 
 	private String key(Long ownerUserId, String confirmationId) {

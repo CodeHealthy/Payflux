@@ -61,6 +61,14 @@ public class WalletController {
 		return walletService.prepareTransfer(currentUserId(jwt), request);
 	}
 
+	@PostMapping("/transfers/confirmations/{confirmationId}/resend")
+	public TransferConfirmationResponse resendTransferOtp(
+			@AuthenticationPrincipal Jwt jwt,
+			@PathVariable String confirmationId
+	) {
+		return walletService.resendTransferOtp(currentUserId(jwt), confirmationId);
+	}
+
 	@PostMapping("/transfers/confirm")
 	public WalletDashboardResponse confirmTransfer(@AuthenticationPrincipal Jwt jwt, @RequestBody ConfirmTransferRequest request) {
 		return walletService.confirmTransfer(currentUserId(jwt), request);

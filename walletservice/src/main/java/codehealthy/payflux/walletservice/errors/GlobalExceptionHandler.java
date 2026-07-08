@@ -112,6 +112,8 @@ public class GlobalExceptionHandler {
 		if (normalized.contains("transfer confirmation expired")) return "TRANSFER_CONFIRMATION_EXPIRED";
 		if (normalized.contains("invalid transfer confirmation code")) return "INVALID_TRANSFER_CONFIRMATION_CODE";
 		if (normalized.contains("transfer confirmation locked")) return "TRANSFER_CONFIRMATION_LOCKED";
+		if (normalized.contains("code was sent recently")) return "TRANSFER_OTP_RESEND_COOLDOWN";
+		if (normalized.contains("too many transfer confirmation code requests")) return "TRANSFER_OTP_RESEND_LIMIT_EXCEEDED";
 		if (normalized.contains("transfer is already being processed")) return "TRANSFER_ALREADY_PROCESSING";
 		if (normalized.contains("transfer not found")) return "TRANSFER_NOT_FOUND";
 		if (normalized.contains("transfer is already reversed")) return "TRANSFER_ALREADY_REVERSED";

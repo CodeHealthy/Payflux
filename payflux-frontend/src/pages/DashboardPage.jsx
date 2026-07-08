@@ -18,12 +18,14 @@ export function DashboardPage({
   isLoading,
   isTransferring,
   isVerifyingRecipient,
+  isResendingTransferOtp,
   isDepositing,
   isCreatingBeneficiary,
   onActionChange,
   onCopyAccountNumber,
   onPrepareTransfer,
   onConfirmTransfer,
+  onResendTransferOtp,
   onVerifyRecipient,
   onDeposit,
   onCreateBeneficiary,
@@ -46,8 +48,10 @@ export function DashboardPage({
               beneficiaries={beneficiaries}
               isSubmitting={isTransferring}
               isVerifyingRecipient={isVerifyingRecipient}
+              isResendingOtp={isResendingTransferOtp}
               onPrepareTransfer={onPrepareTransfer}
               onConfirmTransfer={onConfirmTransfer}
+              onResendTransferOtp={onResendTransferOtp}
               onVerifyRecipient={onVerifyRecipient}
             />
           )}

@@ -44,15 +44,25 @@ function confirmationErrorMessage(errorResult) {
     return 'Too many incorrect attempts. Cancel this transfer and start again to receive a new code.'
   }
 
+  if (errorResult.code === 'TRANSFER_OTP_RESEND_COOLDOWN') {
+    return 'A confirmation code was sent recently. Please wait before requesting another code.'
+  }
+
+  if (errorResult.code === 'TRANSFER_OTP_RESEND_LIMIT_EXCEEDED') {
+    return 'You have requested too many codes for this transfer. Cancel and start a new transfer request later.'
+  }
+
   return errorResult.error || 'We could not confirm this transfer. Please review the code and try again.'
 }
 
 export function WalletTransferPanel({
   beneficiaries,
   isSubmitting,
+  isResendingOtp,
   isVerifyingRecipient,
   onPrepareTransfer,
   onConfirmTransfer,
+  onResendTransferOtp,
   onVerifyRecipient,
 }) {
   const [receiverAccountNumber, setReceiverAccountNumber] = useState('')
@@ -61,13 +71,16 @@ export function WalletTransferPanel({
   const [otp, setOtp] = useState('')
   const [confirmation, setConfirmation] = useState(null)
   const [confirmationError, setConfirmationError] = useState('')
+  const [confirmationNotice, setConfirmationNotice] = useState('')
   const [secondsRemaining, setSecondsRemaining] = useState(0)
+  const [resendSecondsRemaining, setResendSecondsRemaining] = useState(0)
   const [verifiedRecipient, setVerifiedRecipient] = useState(null)
   const [transferIntentKey, setTransferIntentKey] = useState(() => createIdempotencyKey())
 
   const normalizedReceiverAccountNumber = receiverAccountNumber.trim()
   const hasVerifiedRecipient = verifiedRecipient?.accountNumber === normalizedReceiverAccountNumber
   const isConfirmationExpired = confirmation && secondsRemaining === 0
+  const canResendOtp = confirmation && !isConfirmationExpired && resendSecondsRemaining === 0 && !isResendingOtp
 
   useEffect(() => {
     if (!confirmation) {
@@ -81,6 +94,20 @@ export function WalletTransferPanel({
 
     return () => window.clearInterval(timerId)
   }, [confirmation])
+
+  useEffect(() => {
+    if (!confirmation?.resendAvailableAt) {
+      setResendSecondsRemaining(0)
+      return undefined
+    }
+
+    setResendSecondsRemaining(getSecondsUntil(confirmation.resendAvailableAt))
+    const timerId = window.setInterval(() => {
+      setResendSecondsRemaining(getSecondsUntil(confirmation.resendAvailableAt))
+    }, 1000)
+
+    return () => window.clearInterval(timerId)
+  }, [confirmation?.resendAvailableAt])
 
   function handleBeneficiaryChange(event) {
     const accountNumber = event.target.value
@@ -108,6 +135,7 @@ export function WalletTransferPanel({
   function resetTransferIntent() {
     setConfirmation(null)
     setConfirmationError('')
+    setConfirmationNotice('')
     setOtp('')
     setTransferIntentKey(createIdempotencyKey())
   }
@@ -139,6 +167,7 @@ export function WalletTransferPanel({
     if (transferConfirmation) {
       setConfirmation(transferConfirmation)
       setConfirmationError('')
+      setConfirmationNotice('')
       setOtp('')
     }
   }
@@ -169,6 +198,7 @@ export function WalletTransferPanel({
     if (walletDetails) {
       setConfirmation(null)
       setConfirmationError('')
+      setConfirmationNotice('')
       setReceiverAccountNumber('')
       setAmount('1000')
       setDescription('PayFlux transfer')
@@ -181,8 +211,30 @@ export function WalletTransferPanel({
   function handleCancelConfirmation() {
     setConfirmation(null)
     setConfirmationError('')
+    setConfirmationNotice('')
     setOtp('')
     setTransferIntentKey(createIdempotencyKey())
+  }
+
+  async function handleResendOtp() {
+    if (!confirmation || !canResendOtp) {
+      return
+    }
+
+    setConfirmationError('')
+    setConfirmationNotice('')
+    const resendResult = await onResendTransferOtp(confirmation.confirmationId)
+
+    if (resendResult?.error) {
+      setConfirmationError(confirmationErrorMessage(resendResult))
+      return
+    }
+
+    if (resendResult) {
+      setConfirmation(resendResult)
+      setOtp('')
+      setConfirmationNotice('A new code has been sent to your email.')
+    }
   }
 
   return (
@@ -331,6 +383,7 @@ export function WalletTransferPanel({
                   onChange={(event) => {
                     setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))
                     setConfirmationError('')
+                    setConfirmationNotice('')
                   }}
                   placeholder="000000"
                   required
@@ -342,6 +395,28 @@ export function WalletTransferPanel({
                   {confirmationError}
                 </div>
               )}
+
+              {confirmationNotice && (
+                <div className="confirmation-notice" role="status">
+                  {confirmationNotice}
+                </div>
+              )}
+
+              <div className="resend-otp-row">
+                <span>
+                  {resendSecondsRemaining > 0
+                    ? `You can request another code in ${formatRemainingTime(resendSecondsRemaining)}`
+                    : 'Did not receive the email code?'}
+                </span>
+                <button
+                  className="link-button"
+                  type="button"
+                  disabled={!canResendOtp}
+                  onClick={handleResendOtp}
+                >
+                  {isResendingOtp ? 'Sending...' : 'Resend code'}
+                </button>
+              </div>
 
               <div className="form-actions">
                 <button
