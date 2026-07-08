@@ -120,6 +120,14 @@
   padding: 48px;
 }
 
+.auth-back-button {
+  align-items: center;
+  display: inline-flex;
+  gap: 7px;
+  justify-self: start;
+  margin-bottom: 20px;
+}
+
 .auth-copy {
   margin-bottom: 24px;
 }
@@ -165,6 +173,28 @@
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
+}
+
+.recovery-method-tabs {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 4px;
+}
+
+.recovery-method-tabs button {
+  background: transparent;
+  color: #6b7280;
+  min-height: 38px;
+}
+
+.recovery-method-tabs button.active {
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+  color: #111827;
 }
 
 .text-button {

@@ -171,4 +171,12 @@ public class WalletTransfer {
 	public String getFailureReason() {
 		return failureReason;
 	}
+
+	public Instant getCreatedAt() {
+		return createdAt;
+	}
+
+	public Instant getUpdatedAt() {
+		return updatedAt;
+	}
 }

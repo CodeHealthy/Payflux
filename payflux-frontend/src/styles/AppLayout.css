@@ -10,7 +10,7 @@
     linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 255, 0.98)),
     url('/assets/user-account-visuals/subtle-card-pattern-transparent.png') center / 420px auto repeat;
   border-right: 1px solid #e5e7eb;
-  padding: 24px;
+  padding: 22px 18px;
   position: sticky;
   top: 0;
   height: 100vh;
@@ -18,7 +18,7 @@
 }
 
 .sidebar .brand-lockup {
-  margin-bottom: 34px;
+  margin-bottom: 28px;
 }
 
 .mobile-topbar-actions {
@@ -27,17 +27,19 @@
 
 .sidebar-nav {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .sidebar-nav button {
   background: transparent;
-  border-radius: 8px;
+  border-radius: 7px;
   color: #4b5563;
   font-weight: 700;
   justify-content: start;
   min-width: 0;
-  padding: 11px 12px;
+  min-height: 40px;
+  padding: 0 12px;
+  position: relative;
   text-align: left;
   white-space: nowrap;
 }
@@ -46,6 +48,18 @@
 .sidebar-nav button:hover {
   background: #eef5ff;
   color: #006cff;
+}
+
+.sidebar-nav button.active::before {
+  background: #006cff;
+  border-radius: 999px;
+  content: '';
+  height: 18px;
+  left: 0;
+  position: absolute;
+  top: 50%;
+  transform: translate(-18px, -50%);
+  width: 3px;
 }
 
 .app-shell {
@@ -58,7 +72,7 @@
   display: flex;
   gap: 24px;
   justify-content: space-between;
-  margin-bottom: 22px;
+  margin-bottom: 18px;
 }
 
 .eyebrow {
@@ -100,8 +114,8 @@ h2 {
 }
 
 .user-avatar {
-  background: #eef5ff;
-  border: 1px solid #dbeafe;
+  background: transparent;
+  border: 0;
   border-radius: 999px;
   display: block;
   height: 42px;
@@ -120,38 +134,25 @@ h2 {
 
 .account-menu-trigger {
   align-items: center;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
   display: flex;
-  gap: 10px;
-  min-height: 48px;
-  padding: 4px 10px 4px 5px;
+  height: 42px;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0;
+  width: 42px;
 }
 
 .account-menu-trigger:hover,
 .account-menu-trigger[aria-expanded='true'] {
-  border-color: #006cff;
+  background: #eef5ff;
   box-shadow: 0 10px 24px rgba(0, 108, 255, 0.1);
 }
 
-.account-menu-trigger span {
-  display: grid;
-  min-width: 170px;
-  text-align: left;
-}
-
-.account-menu-trigger strong,
-.account-menu-trigger small {
-  display: block;
-  line-height: 1.25;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.account-menu-trigger small {
-  color: #6b7280;
-  font-size: 13px;
+.account-menu-trigger-icon {
+  color: #006cff;
 }
 
 .account-menu-popover {
@@ -288,6 +289,10 @@ h2 {
     min-height: 36px;
     padding: 0 12px;
   }
+
+  .sidebar-nav button.active::before {
+    display: none;
+  }
 }
 
 @media (max-width: 760px) {
@@ -313,13 +318,8 @@ h2 {
   }
 
   .mobile-topbar-actions .account-menu-trigger {
-    background: transparent;
-    border: 0;
-    border-radius: 999px;
-    box-shadow: none;
     height: 42px;
     min-height: 42px;
-    padding: 0;
     width: 42px;
   }
 
@@ -328,18 +328,6 @@ h2 {
     background: #eef5ff;
     border: 0;
     box-shadow: none;
-  }
-
-  .mobile-topbar-actions .account-menu-trigger .user-avatar {
-    background: transparent;
-    border: 0;
-    height: 40px;
-    width: 40px;
-  }
-
-  .mobile-topbar-actions .account-menu-trigger span,
-  .mobile-topbar-actions .account-menu-trigger svg {
-    display: none;
   }
 
   .mobile-topbar-actions .account-menu-popover {

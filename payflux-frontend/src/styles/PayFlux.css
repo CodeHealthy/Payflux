@@ -49,6 +49,33 @@ select {
   max-width: 100%;
 }
 
+button,
+a,
+[role='button'],
+.sidebar-nav,
+.brand-lockup,
+.icon-button,
+.account-menu-trigger,
+.notification-item footer,
+.quick-actions,
+.quick-action,
+.status-pill,
+.direction-pill,
+.user-avatar {
+  user-select: none;
+}
+
+input,
+textarea,
+table,
+.mono-cell,
+.receipt-details,
+.account-info-grid strong,
+.confirmation-summary strong,
+.recipient-verification-card strong {
+  user-select: text;
+}
+
 .stat-card,
 .panel {
   background: #ffffff;
@@ -131,7 +158,8 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   background: #ffffff;
   border: 1px solid #d1d5db;
   border-radius: 6px;
@@ -141,8 +169,16 @@ select {
   padding: 0 12px;
 }
 
+textarea {
+  line-height: 1.5;
+  min-height: 96px;
+  padding: 12px;
+  resize: vertical;
+}
+
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   border-color: #006cff;
   box-shadow: 0 0 0 3px rgba(0, 108, 255, 0.14);
   outline: none;
@@ -167,7 +203,8 @@ select {
 
 button:focus-visible,
 input:focus-visible,
-select:focus-visible {
+select:focus-visible,
+textarea:focus-visible {
   outline: 3px solid rgba(0, 108, 255, 0.28);
   outline-offset: 2px;
 }
@@ -214,6 +251,11 @@ button:disabled {
   color: #991b1b;
   min-height: 36px;
   padding: 0 12px;
+}
+
+.danger-button {
+  background: #991b1b;
+  color: #ffffff;
 }
 
 .icon-button {
@@ -295,11 +337,17 @@ button:disabled {
 
 .notification-item {
   align-items: flex-start;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: inherit;
   display: grid;
   gap: 12px;
   grid-template-columns: 38px minmax(0, 1fr);
+  min-height: auto;
   padding: 14px 16px;
   text-align: left;
+  width: 100%;
 }
 
 .notification-item.unread {
@@ -647,6 +695,33 @@ td {
   color: #9a3412;
 }
 
+.status-pill.danger {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.panel-header.compact {
+  margin-top: 18px;
+}
+
+.panel-header.compact h3 {
+  color: #111827;
+  font-size: 18px;
+  margin: 0;
+}
+
+.wallet-activity-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.transfer-status-section {
+  border-top: 1px solid #eef2f7;
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+}
+
 .admin-wallet-cell {
   display: grid;
   gap: 8px;
@@ -683,6 +758,11 @@ td {
   padding: 18px;
 }
 
+.settings-status-row {
+  display: flex;
+  gap: 12px;
+}
+
 .settings-status-card span {
   color: #1d4ed8;
   display: block;
@@ -690,6 +770,43 @@ td {
   font-weight: 800;
   margin-bottom: 6px;
   text-transform: uppercase;
+}
+
+.settings-overview-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.settings-insight-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+}
+
+.settings-insight-card span {
+  color: #0057cc;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.settings-insight-card strong {
+  color: #041941;
+  font-size: 18px;
+}
+
+.settings-insight-card p,
+.form-support-text {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.55;
+  margin: 0;
 }
 
 .settings-grid {
@@ -870,6 +987,12 @@ td {
   height: 48px;
   justify-content: center;
   width: 48px;
+}
+
+.secure-confirmation-icon.danger {
+  background: #fef2f2;
+  color: #991b1b;
+  font-weight: 900;
 }
 
 .email-code-status {
@@ -1111,6 +1234,7 @@ td {
   .admin-hero,
   .admin-grid,
   .settings-hero,
+  .settings-overview-grid,
   .settings-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -1166,6 +1290,10 @@ td {
 
   .admin-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .settings-status-row {
+    display: grid;
   }
 
   .stat-card {

@@ -11,7 +11,8 @@ public record UserResponse(
 		String email,
 		UserRole role,
 		Instant createdAt,
-		boolean securityQuestionConfigured
+		boolean securityQuestionConfigured,
+		boolean emailVerified
 ) {
 	public static UserResponse from(AppUser user) {
 		return new UserResponse(
@@ -20,7 +21,8 @@ public record UserResponse(
 				user.getEmail(),
 				user.getRole(),
 				user.getCreatedAt(),
-				user.hasSecurityQuestion()
+				user.hasSecurityQuestion(),
+				user.isEmailVerified()
 		);
 	}
 }

@@ -105,6 +105,17 @@ export function getAdminWallets() {
   return request('/api/wallets/admin')
 }
 
+export function getAdminTransferActivities() {
+  return request('/api/wallets/admin/transfers')
+}
+
+export function reverseAdminTransfer(transactionReference, reason) {
+  return request(`/api/wallets/admin/transfers/${encodeURIComponent(transactionReference)}/reverse`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  })
+}
+
 export function suspendAdminWallet(ownerUserId, reason) {
   return request(`/api/wallets/admin/users/${ownerUserId}/suspend`, {
     method: 'POST',

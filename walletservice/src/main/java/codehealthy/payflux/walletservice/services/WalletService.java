@@ -14,6 +14,7 @@ import codehealthy.payflux.walletservice.dto.TransferConfirmationResponse;
 import codehealthy.payflux.walletservice.dto.WalletDashboardResponse;
 import codehealthy.payflux.walletservice.dto.WalletResponse;
 import codehealthy.payflux.walletservice.dto.WalletTransactionResponse;
+import codehealthy.payflux.walletservice.dto.WalletTransferActivityResponse;
 import codehealthy.payflux.walletservice.models.Wallet;
 import codehealthy.payflux.walletservice.models.WalletStatus;
 import codehealthy.payflux.walletservice.models.WalletTransaction;
@@ -99,8 +100,13 @@ public class WalletService {
 				.stream()
 				.map(WalletTransactionResponse::from)
 				.toList();
+		List<WalletTransferActivityResponse> transferActivities = transferRepository
+				.findTop10ByOwnerUserIdOrderByUpdatedAtDesc(ownerUserId)
+				.stream()
+				.map(WalletTransferActivityResponse::from)
+				.toList();
 
-		return new WalletDashboardResponse(WalletResponse.from(wallet), transactions);
+		return new WalletDashboardResponse(WalletResponse.from(wallet), transactions, transferActivities);
 	}
 
 	@Transactional(readOnly = true)
@@ -108,6 +114,14 @@ public class WalletService {
 		return walletRepository.findTop100ByOrderByUpdatedAtDesc()
 				.stream()
 				.map(WalletResponse::from)
+				.toList();
+	}
+
+	@Transactional(readOnly = true)
+	public List<WalletTransferActivityResponse> findAdminTransferActivities() {
+		return transferRepository.findTop100ByOrderByUpdatedAtDesc()
+				.stream()
+				.map(WalletTransferActivityResponse::from)
 				.toList();
 	}
 
@@ -219,7 +233,7 @@ public class WalletService {
 	}
 
 	@Transactional
-	public WalletDashboardResponse reverseTransfer(String transactionReference, ReverseTransferRequest request) {
+	public WalletDashboardResponse reverseTransfer(Long adminUserId, String transactionReference, ReverseTransferRequest request) {
 		String reference = requireText(transactionReference, "transactionReference");
 		WalletTransfer transfer = transferRepository.findByTransactionReferenceForUpdate(reference)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transfer not found"));
@@ -250,7 +264,7 @@ public class WalletService {
 		assertActive(sender);
 		assertActive(receiver);
 
-		String reversalReason = optionalText(request == null ? null : request.reason(), "Transfer reversed by admin");
+		String reversalReason = optionalText(request == null ? null : request.reason(), "Transfer reversed by admin " + adminUserId);
 		String reversalReference = "REV-" + reference;
 		rejectDuplicateReference(reversalReference + "-D");
 

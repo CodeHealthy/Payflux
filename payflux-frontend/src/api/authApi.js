@@ -14,6 +14,20 @@ export function loginUser(payload) {
   })
 }
 
+export function verifyEmail(payload) {
+  return request('/api/auth/verify-email', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function resendEmailVerification(payload) {
+  return request('/api/auth/resend-verification', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
 export function logoutUser() {
   const refreshToken = getRefreshToken()
   if (!refreshToken) {

@@ -4,6 +4,7 @@ import java.util.List;
 
 public record WalletDashboardResponse(
 		WalletResponse wallet,
-		List<WalletTransactionResponse> transactions
+		List<WalletTransactionResponse> transactions,
+		List<WalletTransferActivityResponse> transferActivities
 ) {
 }

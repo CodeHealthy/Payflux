@@ -92,9 +92,20 @@ public class GlobalExceptionHandler {
 	private String codeFor(String message) {
 		String normalized = message.toLowerCase();
 		if (normalized.contains("email is already registered")) return "EMAIL_ALREADY_REGISTERED";
+		if (normalized.contains("email verification is required")) return "EMAIL_VERIFICATION_REQUIRED";
+		if (normalized.contains("email verification code expired")) return "EMAIL_VERIFICATION_EXPIRED";
+		if (normalized.contains("invalid email verification code")) return "INVALID_EMAIL_VERIFICATION_CODE";
+		if (normalized.contains("verification code was sent recently")) return "EMAIL_VERIFICATION_RESEND_COOLDOWN";
+		if (normalized.contains("email verification locked")) return "EMAIL_VERIFICATION_LOCKED";
+		if (normalized.contains("email is already verified")) return "EMAIL_ALREADY_VERIFIED";
 		if (normalized.contains("invalid email or password")) return "INVALID_CREDENTIALS";
 		if (normalized.contains("no payflux user exists")) return "RECOVERY_USER_NOT_FOUND";
 		if (normalized.contains("password recovery is not configured")) return "PASSWORD_RECOVERY_NOT_CONFIGURED";
+		if (normalized.contains("password reset code was sent recently")) return "PASSWORD_RESET_RESEND_COOLDOWN";
+		if (normalized.contains("password reset code expired")) return "PASSWORD_RESET_CODE_EXPIRED";
+		if (normalized.contains("invalid password reset code")) return "INVALID_PASSWORD_RESET_CODE";
+		if (normalized.contains("password reset locked")) return "PASSWORD_RESET_LOCKED";
+		if (normalized.contains("password reset code is required")) return "PASSWORD_RESET_CODE_REQUIRED";
 		if (normalized.contains("security answer is incorrect")) return "SECURITY_ANSWER_INCORRECT";
 		if (normalized.contains("current password is incorrect")) return "CURRENT_PASSWORD_INCORRECT";
 		if (normalized.contains("user account is not available")) return "USER_ACCOUNT_NOT_AVAILABLE";

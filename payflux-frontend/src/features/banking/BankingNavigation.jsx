@@ -24,6 +24,7 @@ export function BankingNavigation({ activeRoute, isAdmin, userActions, onRouteCh
 
       <nav className="sidebar-nav" aria-label="Main navigation">
         {bankingRoutes
+          .filter((route) => !route.hiddenFromNav)
           .filter((route) => !route.adminOnly || isAdmin)
           .map((route) => (
             <button

@@ -1,4 +1,4 @@
-import { ChevronDown, LogOut, RefreshCw, Settings, ShieldCheck, UserRound } from 'lucide-react'
+import { LogOut, RefreshCw, Settings, ShieldCheck, UserRound } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { payfluxAssets } from '../assets/payfluxAssets'
 import { useCloseOnOutside } from '../utils/useCloseOnOutside'
@@ -33,12 +33,7 @@ export function UserAccountMenu({ user, onRefresh, onLogout, onOpenSettings }) {
         aria-expanded={isOpen}
         onClick={() => setIsOpen((current) => !current)}
       >
-        <img className="user-avatar" src={payfluxAssets.userAccount.avatar} alt="" />
-        <span>
-          <strong>{user.fullName}</strong>
-          <small>{user.email}</small>
-        </span>
-        <ChevronDown size={16} aria-hidden="true" />
+        <UserRound className="account-menu-trigger-icon" size={25} aria-hidden="true" />
       </button>
 
       {isOpen && (

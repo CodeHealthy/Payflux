@@ -17,6 +17,7 @@ import {
   exportWalletStatement,
   getAccounts,
   getAdminUsers,
+  getAdminTransferActivities,
   getAdminWallets,
   getAuditRecords,
   getAuditSummary,
@@ -29,6 +30,7 @@ import {
   markNotificationRead,
   prepareWalletTransfer,
   resendWalletTransferOtp,
+  reverseAdminTransfer,
   suspendAdminWallet,
   verifyTransferRecipient,
 } from '../../api/payfluxApi'
@@ -45,6 +47,7 @@ export function useBankingWorkspace() {
   const [selectedTransaction, setSelectedTransaction] = useState(null)
   const [adminUsers, setAdminUsers] = useState([])
   const [adminWallets, setAdminWallets] = useState([])
+  const [adminTransferActivities, setAdminTransferActivities] = useState([])
   const [auditRecords, setAuditRecords] = useState([])
   const [auditSummary, setAuditSummary] = useState(null)
   const [walletDashboard, setWalletDashboard] = useState(null)
@@ -69,6 +72,7 @@ export function useBankingWorkspace() {
     setSelectedTransaction(null)
     setAdminUsers([])
     setAdminWallets([])
+    setAdminTransferActivities([])
     setAuditRecords([])
     setAuditSummary(null)
     setWalletDashboard(null)
@@ -108,11 +112,13 @@ export function useBankingWorkspace() {
       dashboardRequests.push(getAuditSummary())
       dashboardRequests.push(getAdminUsers())
       dashboardRequests.push(getAdminWallets())
+      dashboardRequests.push(getAdminTransferActivities())
     } else {
       setAuditRecords([])
       setAuditSummary(null)
       setAdminUsers([])
       setAdminWallets([])
+      setAdminTransferActivities([])
     }
 
     const results = await Promise.allSettled(dashboardRequests)
@@ -127,6 +133,7 @@ export function useBankingWorkspace() {
       auditSummaryResult,
       adminUsersResult,
       adminWalletsResult,
+      adminTransferActivitiesResult,
     ] = results
     const failures = []
     const hasAuthFailure = results.some(
@@ -164,6 +171,9 @@ export function useBankingWorkspace() {
     }
     if (canReadAuditRecords && adminWalletsResult) {
       collectResult(adminWalletsResult, setAdminWallets, failures)
+    }
+    if (canReadAuditRecords && adminTransferActivitiesResult) {
+      collectResult(adminTransferActivitiesResult, setAdminTransferActivities, failures)
     }
 
     setError([...new Set(failures)].join(' '))
@@ -421,6 +431,21 @@ export function useBankingWorkspace() {
     }
   }
 
+  async function handleReverseTransfer(transactionReference, reason) {
+    setError('')
+    setSuccessMessage('')
+
+    try {
+      await reverseAdminTransfer(transactionReference, reason)
+      setSuccessMessage(`Transfer ${transactionReference} reversed`)
+      await loadDashboard()
+      return true
+    } catch (requestError) {
+      handleRequestError(requestError, handleAuthRequired, setError)
+      return false
+    }
+  }
+
   async function handleUpdateProfile(formValues) {
     setError('')
     setSuccessMessage('')
@@ -513,7 +538,7 @@ export function useBankingWorkspace() {
       accounts: accounts.length,
       beneficiaries: beneficiaries.length,
       notifications: notifications.length,
-      transactions: transactions.length,
+      transactions: walletDashboard?.transferActivities?.length || transactions.length,
       walletBalance: walletDashboard?.wallet?.availableBalance,
       walletCurrency: walletDashboard?.wallet?.currency,
       lastAccount: accounts.at(0)?.createdAt,
@@ -537,6 +562,7 @@ export function useBankingWorkspace() {
       selectedTransaction,
       adminUsers,
       adminWallets,
+      adminTransferActivities,
       auditRecords,
       auditSummary,
       walletDashboard,
@@ -575,6 +601,7 @@ export function useBankingWorkspace() {
       handleMarkAllNotificationsRead,
       handleSuspendWallet,
       handleActivateWallet,
+      handleReverseTransfer,
       handleUpdateProfile,
       handleUpdatePassword,
       handleUpdateSecurityQuestion,

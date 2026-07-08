@@ -5,12 +5,14 @@ import codehealthy.payflux.authservice.dto.ForgotPasswordRequest;
 import codehealthy.payflux.authservice.dto.LoginRequest;
 import codehealthy.payflux.authservice.dto.PasswordRecoveryQuestionResponse;
 import codehealthy.payflux.authservice.dto.RefreshTokenRequest;
+import codehealthy.payflux.authservice.dto.RegistrationResponse;
 import codehealthy.payflux.authservice.dto.RegisterRequest;
 import codehealthy.payflux.authservice.dto.ResetPasswordRequest;
 import codehealthy.payflux.authservice.dto.UpdatePasswordRequest;
 import codehealthy.payflux.authservice.dto.UpdateProfileRequest;
 import codehealthy.payflux.authservice.dto.UpdateSecurityQuestionRequest;
 import codehealthy.payflux.authservice.dto.UserResponse;
+import codehealthy.payflux.authservice.dto.VerifyEmailRequest;
 import codehealthy.payflux.authservice.services.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -37,8 +39,20 @@ public class AuthController {
 
 	@PostMapping("/register")
 	@ResponseStatus(HttpStatus.CREATED)
-	public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
+	public RegistrationResponse register(@Valid @RequestBody RegisterRequest request) {
 		return authService.register(request);
+	}
+
+	@PostMapping("/verify-email")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+		authService.verifyEmail(request);
+	}
+
+	@PostMapping("/resend-verification")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void resendEmailVerification(@Valid @RequestBody ForgotPasswordRequest request) {
+		authService.resendEmailVerification(request);
 	}
 
 	@PostMapping("/login")

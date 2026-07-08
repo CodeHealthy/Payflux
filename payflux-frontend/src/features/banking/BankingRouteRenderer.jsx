@@ -79,10 +79,12 @@ export function BankingRouteRenderer({ state, actions }) {
           {...commonPageProps}
           users={state.adminUsers}
           wallets={state.adminWallets}
+          transferActivities={state.adminTransferActivities}
           auditRecords={state.auditRecords}
           auditSummary={state.auditSummary}
           onSuspendWallet={actions.handleSuspendWallet}
           onActivateWallet={actions.handleActivateWallet}
+          onReverseTransfer={actions.handleReverseTransfer}
         />
       )
     default:

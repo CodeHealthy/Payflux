@@ -5,12 +5,14 @@ import codehealthy.payflux.authservice.dto.ForgotPasswordRequest;
 import codehealthy.payflux.authservice.dto.LoginRequest;
 import codehealthy.payflux.authservice.dto.PasswordRecoveryQuestionResponse;
 import codehealthy.payflux.authservice.dto.RefreshTokenRequest;
+import codehealthy.payflux.authservice.dto.RegistrationResponse;
 import codehealthy.payflux.authservice.dto.RegisterRequest;
 import codehealthy.payflux.authservice.dto.ResetPasswordRequest;
 import codehealthy.payflux.authservice.dto.UpdatePasswordRequest;
 import codehealthy.payflux.authservice.dto.UpdateProfileRequest;
 import codehealthy.payflux.authservice.dto.UpdateSecurityQuestionRequest;
 import codehealthy.payflux.authservice.dto.UserResponse;
+import codehealthy.payflux.authservice.dto.VerifyEmailRequest;
 import codehealthy.payflux.authservice.events.UserRegisteredEvent;
 import codehealthy.payflux.authservice.models.AppUser;
 import codehealthy.payflux.authservice.models.UserRole;
@@ -32,6 +34,8 @@ public class AuthService {
 	private final UserEventPublisher userEventPublisher;
 	private final LoginProtectionService loginProtectionService;
 	private final RefreshTokenService refreshTokenService;
+	private final EmailVerificationService emailVerificationService;
+	private final PasswordResetCodeService passwordResetCodeService;
 
 	public AuthService(
 			AppUserRepository appUserRepository,
@@ -39,7 +43,9 @@ public class AuthService {
 			JwtService jwtService,
 			UserEventPublisher userEventPublisher,
 			LoginProtectionService loginProtectionService,
-			RefreshTokenService refreshTokenService
+			RefreshTokenService refreshTokenService,
+			EmailVerificationService emailVerificationService,
+			PasswordResetCodeService passwordResetCodeService
 	) {
 		this.appUserRepository = appUserRepository;
 		this.passwordEncoder = passwordEncoder;
@@ -47,9 +53,11 @@ public class AuthService {
 		this.userEventPublisher = userEventPublisher;
 		this.loginProtectionService = loginProtectionService;
 		this.refreshTokenService = refreshTokenService;
+		this.emailVerificationService = emailVerificationService;
+		this.passwordResetCodeService = passwordResetCodeService;
 	}
 
-	public AuthResponse register(RegisterRequest request) {
+	public RegistrationResponse register(RegisterRequest request) {
 		String email = request.email().trim().toLowerCase();
 
 		if (appUserRepository.existsByEmail(email)) {
@@ -65,15 +73,9 @@ public class AuthService {
 				passwordEncoder.encode(normalizeSecurityAnswer(request.securityAnswer()))
 		);
 		AppUser savedUser = appUserRepository.save(user);
+		emailVerificationService.sendInitialCode(savedUser);
 
-		userEventPublisher.publishUserRegistered(new UserRegisteredEvent(
-				savedUser.getId(),
-				savedUser.getFullName(),
-				savedUser.getEmail(),
-				savedUser.getCreatedAt()
-		));
-
-		return createAuthResponse(savedUser);
+		return RegistrationResponse.verificationRequired(savedUser.getEmail());
 	}
 
 	public AuthResponse login(LoginRequest request, String clientIp) {
@@ -91,9 +93,36 @@ public class AuthService {
 			loginProtectionService.recordFailure(email, normalizedClientIp);
 			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
 		}
+		if (!user.isEmailVerified()) {
+			emailVerificationService.sendInitialCode(user);
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Email verification is required before login");
+		}
 
 		loginProtectionService.recordSuccess(email, normalizedClientIp);
 		return createAuthResponse(user);
+	}
+
+	public void verifyEmail(VerifyEmailRequest request) {
+		AppUser user = appUserRepository.findByEmail(normalizeEmail(request.email()))
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No PayFlux user exists for this email"));
+		if (user.isEmailVerified()) {
+			return;
+		}
+
+		emailVerificationService.verify(user, request.code());
+		user.markEmailVerified();
+		AppUser verifiedUser = appUserRepository.save(user);
+		publishUserRegistered(verifiedUser);
+	}
+
+	public void resendEmailVerification(ForgotPasswordRequest request) {
+		AppUser user = appUserRepository.findByEmail(normalizeEmail(request.email()))
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No PayFlux user exists for this email"));
+		if (user.isEmailVerified()) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already verified");
+		}
+
+		emailVerificationService.resendCode(user);
 	}
 
 	public AuthResponse refresh(RefreshTokenRequest request) {
@@ -114,9 +143,7 @@ public class AuthService {
 		AppUser user = appUserRepository.findByEmail(normalizeEmail(request.email()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No PayFlux user exists for this email"));
 
-		if (!user.hasSecurityQuestion()) {
-			throw new ResponseStatusException(HttpStatus.CONFLICT, "Password recovery is not configured for this account");
-		}
+		passwordResetCodeService.sendCode(user);
 
 		return new PasswordRecoveryQuestionResponse(user.getEmail(), user.getSecurityQuestion());
 	}
@@ -125,11 +152,15 @@ public class AuthService {
 		AppUser user = appUserRepository.findByEmail(normalizeEmail(request.email()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No PayFlux user exists for this email"));
 
-		if (!user.hasSecurityQuestion()) {
-			throw new ResponseStatusException(HttpStatus.CONFLICT, "Password recovery is not configured for this account");
-		}
-		if (!passwordEncoder.matches(normalizeSecurityAnswer(request.securityAnswer()), user.getSecurityAnswerHash())) {
-			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Security answer is incorrect");
+		if (passwordResetCodeService.hasResetCode(request.resetCode())) {
+			passwordResetCodeService.verify(user, request.resetCode());
+		} else {
+			if (!user.hasSecurityQuestion()) {
+				throw new ResponseStatusException(HttpStatus.CONFLICT, "Password recovery is not configured for this account");
+			}
+			if (!passwordEncoder.matches(normalizeSecurityAnswer(request.securityAnswer()), user.getSecurityAnswerHash())) {
+				throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Security answer is incorrect");
+			}
 		}
 
 		user.updatePassword(passwordEncoder.encode(request.newPassword()));
@@ -200,5 +231,14 @@ public class AuthService {
 		JwtService.GeneratedToken accessToken = jwtService.generateAccessToken(user);
 		String refreshToken = refreshTokenService.issueToken(user.getId());
 		return AuthResponse.bearer(accessToken.value(), refreshToken, accessToken.expiresAt(), UserResponse.from(user));
+	}
+
+	private void publishUserRegistered(AppUser user) {
+		userEventPublisher.publishUserRegistered(new UserRegisteredEvent(
+				user.getId(),
+				user.getFullName(),
+				user.getEmail(),
+				user.getCreatedAt()
+		));
 	}
 }

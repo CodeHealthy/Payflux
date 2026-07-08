@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { EmptyState } from '../components/EmptyState'
 import { payfluxAssets } from '../assets/payfluxAssets'
 import { formatDateTime } from '../utils/formatDateTime'
 import { formatMoney } from '../utils/formatMoney'
+import { transferStatusLabel, transferStatusTone } from '../features/wallets/transferStatus'
 
 const emptyImage = payfluxAssets.admin.auditLog
 
@@ -10,11 +12,14 @@ export function AuditRecordsPage({
   auditSummary,
   users,
   wallets,
+  transferActivities = [],
   isLoading,
   onSuspendWallet,
   onActivateWallet,
+  onReverseTransfer,
 }) {
   const walletsByOwnerUserId = new Map(wallets.map((wallet) => [wallet.ownerUserId, wallet]))
+  const [transferForReview, setTransferForReview] = useState(null)
 
   return (
     <div className="admin-console">
@@ -40,6 +45,70 @@ export function AuditRecordsPage({
           label="Latest compliance event"
           value={auditSummary?.latestRecordAt ? formatDateTime(auditSummary.latestRecordAt) : 'None'}
         />
+      </section>
+
+      <section className="panel">
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow">Transfer review</p>
+            <h2>Recent transfer requests</h2>
+          </div>
+        </div>
+
+        {transferActivities.length === 0 ? (
+          <EmptyState
+            imageSrc={payfluxAssets.emptyStates.transactions}
+            isLoading={isLoading}
+            loadingText="Loading transfer reviews..."
+            text="Completed, failed, pending, and reversed transfers will be available here for operational review."
+          />
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Reference</th>
+                  <th>From</th>
+                  <th>To</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Updated</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transferActivities.map((transfer) => (
+                  <tr key={transfer.id}>
+                    <td className="mono-cell">{transfer.transactionReference}</td>
+                    <td className="mono-cell">{transfer.senderAccountNumber}</td>
+                    <td className="mono-cell">{transfer.receiverAccountNumber}</td>
+                    <td>{formatMoney(transfer.amount, transfer.currency)}</td>
+                    <td>
+                      <span className={`status-pill ${transferStatusTone(transfer.status)}`}>
+                        {transferStatusLabel(transfer.status)}
+                      </span>
+                      {transfer.failureReason && <small className="muted-cell">{transfer.failureReason}</small>}
+                    </td>
+                    <td>{formatDateTime(transfer.updatedAt || transfer.createdAt)}</td>
+                    <td>
+                      {transfer.status === 'COMPLETED' ? (
+                        <button
+                          className="danger-soft-button"
+                          type="button"
+                          onClick={() => setTransferForReview(transfer)}
+                        >
+                          Review reversal
+                        </button>
+                      ) : (
+                        <span className="muted-cell">No action</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       <section className="admin-grid">
@@ -161,6 +230,12 @@ export function AuditRecordsPage({
           )}
         </section>
       </section>
+
+      <TransferReversalDialog
+        transfer={transferForReview}
+        onClose={() => setTransferForReview(null)}
+        onReverseTransfer={onReverseTransfer}
+      />
     </div>
   )
 }
@@ -222,4 +297,87 @@ function requestWalletReason({ actionLabel, fallbackReason, onConfirm }) {
   }
 
   onConfirm(reason.trim() || fallbackReason)
+}
+
+function TransferReversalDialog({ transfer, onClose, onReverseTransfer }) {
+  const [reason, setReason] = useState('Customer dispute reviewed by operations')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  if (!transfer) {
+    return null
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+    setIsSubmitting(true)
+    const reversed = await onReverseTransfer(
+      transfer.transactionReference,
+      reason.trim() || 'Transfer reversed by operations review',
+    )
+    setIsSubmitting(false)
+
+    if (reversed) {
+      onClose()
+      setReason('Customer dispute reviewed by operations')
+    }
+  }
+
+  return (
+    <div className="secure-confirmation-backdrop" role="presentation">
+      <section
+        aria-labelledby="transfer-reversal-title"
+        aria-modal="true"
+        className="secure-confirmation-dialog"
+        role="dialog"
+      >
+        <div className="secure-confirmation-header">
+          <span className="secure-confirmation-icon danger">!</span>
+          <div>
+            <p className="eyebrow">Admin review</p>
+            <h2 id="transfer-reversal-title">Reverse transfer</h2>
+          </div>
+        </div>
+
+        <div className="confirmation-summary">
+          <article>
+            <span>Reference</span>
+            <strong className="mono-cell">{transfer.transactionReference}</strong>
+          </article>
+          <article>
+            <span>Amount</span>
+            <strong>{formatMoney(transfer.amount, transfer.currency)}</strong>
+          </article>
+          <article>
+            <span>From</span>
+            <strong className="mono-cell">{transfer.senderAccountNumber}</strong>
+          </article>
+          <article>
+            <span>To</span>
+            <strong className="mono-cell">{transfer.receiverAccountNumber}</strong>
+          </article>
+        </div>
+
+        <form className="account-form" onSubmit={handleSubmit}>
+          <label>
+            Reversal reason
+            <textarea
+              maxLength="240"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              required
+            />
+          </label>
+
+          <div className="form-actions">
+            <button className="danger-button" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Reversing...' : 'Reverse transfer'}
+            </button>
+            <button className="ghost-button" type="button" onClick={onClose}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  )
 }

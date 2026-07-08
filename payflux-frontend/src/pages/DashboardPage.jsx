@@ -68,6 +68,7 @@ export function DashboardPage({
 
         <RecentActivity
           transactions={transactions}
+          transferActivities={walletDashboard?.transferActivities || []}
           notifications={notifications}
           currentUserId={currentUserId}
           isLoading={isLoading}

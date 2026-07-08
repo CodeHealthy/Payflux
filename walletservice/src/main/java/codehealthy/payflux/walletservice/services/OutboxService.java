@@ -24,8 +24,7 @@ public class OutboxService {
 			ObjectMapper objectMapper,
 			@Value("${app.kafka.topics.transfer-completed}") String transferCompletedTopic,
 			@Value("${app.kafka.topics.admin-wallet-status-changed}") String adminWalletStatusChangedTopic,
-			@Value("${app.kafka.topics.transfer-otp-requested}") String transferOtpRequestedTopic
-	) {
+			@Value("${app.kafka.topics.transfer-otp-requested}") String transferOtpRequestedTopic) {
 		this.outboxEventRepository = outboxEventRepository;
 		this.objectMapper = objectMapper;
 		this.transferCompletedTopic = transferCompletedTopic;
@@ -40,8 +39,7 @@ public class OutboxService {
 				TransferCompletedEvent.class.getName(),
 				"WALLET_TRANSFER",
 				event.transactionReference(),
-				toJson(event)
-		));
+				toJson(event)));
 	}
 
 	public void enqueueAdminWalletStatusChanged(AdminWalletStatusChangedEvent event) {
@@ -51,8 +49,7 @@ public class OutboxService {
 				AdminWalletStatusChangedEvent.class.getName(),
 				"WALLET",
 				event.ownerUserId().toString(),
-				toJson(event)
-		));
+				toJson(event)));
 	}
 
 	public void enqueueTransferOtpRequested(TransferOtpRequestedEvent event) {
@@ -62,8 +59,7 @@ public class OutboxService {
 				TransferOtpRequestedEvent.class.getName(),
 				"TRANSFER_OTP",
 				event.ownerUserId().toString(),
-				toJson(event)
-		));
+				toJson(event)));
 	}
 
 	private String toJson(Object event) {

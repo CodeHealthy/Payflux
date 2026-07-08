@@ -8,6 +8,7 @@ import codehealthy.payflux.walletservice.dto.TransferRequest;
 import codehealthy.payflux.walletservice.dto.TransferConfirmationResponse;
 import codehealthy.payflux.walletservice.dto.WalletDashboardResponse;
 import codehealthy.payflux.walletservice.dto.WalletResponse;
+import codehealthy.payflux.walletservice.dto.WalletTransferActivityResponse;
 import codehealthy.payflux.walletservice.services.WalletService;
 import codehealthy.payflux.walletservice.services.WalletStatementService;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -91,15 +92,21 @@ public class WalletController {
 
 	@PostMapping("/admin/transfers/{transactionReference}/reverse")
 	public WalletDashboardResponse reverseTransfer(
+			@AuthenticationPrincipal Jwt jwt,
 			@PathVariable String transactionReference,
 			@RequestBody ReverseTransferRequest request
 	) {
-		return walletService.reverseTransfer(transactionReference, request);
+		return walletService.reverseTransfer(currentUserId(jwt), transactionReference, request);
 	}
 
 	@GetMapping("/admin")
 	public List<WalletResponse> findAdminWallets() {
 		return walletService.findAdminWallets();
+	}
+
+	@GetMapping("/admin/transfers")
+	public List<WalletTransferActivityResponse> findAdminTransferActivities() {
+		return walletService.findAdminTransferActivities();
 	}
 
 	@PostMapping("/admin/users/{ownerUserId}/suspend")

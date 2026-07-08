@@ -36,6 +36,9 @@ public class AppUser {
 	@Column(length = 255)
 	private String securityAnswerHash;
 
+	@Column(nullable = false)
+	private boolean emailVerified = false;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private UserRole role = UserRole.USER;
@@ -90,6 +93,10 @@ public class AppUser {
 		this.securityAnswerHash = securityAnswerHash;
 	}
 
+	public void markEmailVerified() {
+		this.emailVerified = true;
+	}
+
 	public Long getId() {
 		return id;
 	}
@@ -117,6 +124,10 @@ public class AppUser {
 	public boolean hasSecurityQuestion() {
 		return securityQuestion != null && !securityQuestion.isBlank()
 				&& securityAnswerHash != null && !securityAnswerHash.isBlank();
+	}
+
+	public boolean isEmailVerified() {
+		return emailVerified;
 	}
 
 	public UserRole getRole() {

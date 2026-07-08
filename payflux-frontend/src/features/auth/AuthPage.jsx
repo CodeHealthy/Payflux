@@ -1,9 +1,12 @@
 import { useState } from 'react'
+import { ArrowLeft } from 'lucide-react'
 import {
   loginUser,
   registerUser,
+  resendEmailVerification,
   requestPasswordRecovery,
   resetPassword,
+  verifyEmail,
 } from '../../api/authApi'
 import { payfluxAssets } from '../../assets/payfluxAssets'
 import { saveSession } from './authSession'
@@ -16,18 +19,22 @@ const emptyForm = {
   securityQuestion: '',
   securityAnswer: '',
   newPassword: '',
+  verificationCode: '',
+  resetCode: '',
 }
 
-export function AuthPage({ onAuthenticated }) {
-  const [mode, setMode] = useState('login')
+export function AuthPage({ initialMode = 'login', onAuthenticated, onBackHome }) {
+  const [mode, setMode] = useState(initialMode)
   const [formValues, setFormValues] = useState(emptyForm)
   const [recoveryQuestion, setRecoveryQuestion] = useState(null)
+  const [recoveryMethod, setRecoveryMethod] = useState('email')
   const [successMessage, setSuccessMessage] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const isRegisterMode = mode === 'register'
   const isRecoveryMode = mode === 'recovery'
+  const isVerifyMode = mode === 'verify-email'
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -40,6 +47,7 @@ export function AuthPage({ onAuthenticated }) {
   function switchMode(nextMode) {
     setMode(nextMode)
     setRecoveryQuestion(null)
+    setRecoveryMethod('email')
     setSuccessMessage('')
     setError('')
   }
@@ -52,6 +60,11 @@ export function AuthPage({ onAuthenticated }) {
 
     if (isRecoveryMode) {
       await handleRecoverySubmit()
+      return
+    }
+
+    if (isVerifyMode) {
+      await handleVerificationSubmit()
       return
     }
 
@@ -69,14 +82,64 @@ export function AuthPage({ onAuthenticated }) {
         }
 
     try {
-      const authResponse = isRegisterMode
-        ? await registerUser(payload)
-        : await loginUser(payload)
+      if (isRegisterMode) {
+        const registrationResponse = await registerUser(payload)
+        setSuccessMessage(registrationResponse.message || 'Profile created. Check your email for a verification code.')
+        setFormValues((currentValues) => ({
+          ...currentValues,
+          password: '',
+          verificationCode: '',
+        }))
+        setMode('verify-email')
+        return
+      }
+
+      const authResponse = await loginUser(payload)
 
       saveSession(authResponse)
       onAuthenticated(authResponse.user)
     } catch (requestError) {
+      if (requestError.code === 'EMAIL_VERIFICATION_REQUIRED') {
+        setSuccessMessage('Verify your email before signing in. We sent a fresh code to your inbox.')
+        setMode('verify-email')
+        return
+      }
+
       setError(requestError.message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function handleVerificationSubmit() {
+    try {
+      await verifyEmail({
+        email: formValues.email,
+        code: formValues.verificationCode,
+      })
+      setSuccessMessage('Email verified. You can now sign in.')
+      setFormValues((currentValues) => ({
+        ...emptyForm,
+        email: currentValues.email,
+      }))
+      setMode('login')
+    } catch (requestError) {
+      setError(verificationErrorMessage(requestError))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function handleResendVerification() {
+    setError('')
+    setSuccessMessage('')
+    setIsSubmitting(true)
+
+    try {
+      await resendEmailVerification({ email: formValues.email })
+      setSuccessMessage('A new verification code has been sent to your email.')
+    } catch (requestError) {
+      setError(verificationErrorMessage(requestError))
     } finally {
       setIsSubmitting(false)
     }
@@ -87,12 +150,15 @@ export function AuthPage({ onAuthenticated }) {
       if (!recoveryQuestion) {
         const response = await requestPasswordRecovery({ email: formValues.email })
         setRecoveryQuestion(response)
+        setRecoveryMethod('email')
+        setSuccessMessage('We sent a password reset code to your email.')
         return
       }
 
       await resetPassword({
         email: formValues.email,
-        securityAnswer: formValues.securityAnswer,
+        resetCode: recoveryMethod === 'email' ? formValues.resetCode : undefined,
+        securityAnswer: recoveryMethod === 'question' ? formValues.securityAnswer : undefined,
         newPassword: formValues.newPassword,
       })
       setSuccessMessage('Password reset completed. You can sign in with your new password.')
@@ -103,7 +169,22 @@ export function AuthPage({ onAuthenticated }) {
       }))
       setMode('login')
     } catch (requestError) {
-      setError(requestError.message)
+      setError(passwordResetErrorMessage(requestError))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function handleResendPasswordReset() {
+    setError('')
+    setSuccessMessage('')
+    setIsSubmitting(true)
+
+    try {
+      await requestPasswordRecovery({ email: formValues.email })
+      setSuccessMessage('A new password reset code has been sent to your email.')
+    } catch (requestError) {
+      setError(passwordResetErrorMessage(requestError))
     } finally {
       setIsSubmitting(false)
     }
@@ -150,12 +231,20 @@ export function AuthPage({ onAuthenticated }) {
       </section>
 
       <section className="auth-panel">
+        {onBackHome && (
+          <button className="text-button auth-back-button" type="button" onClick={onBackHome}>
+            <ArrowLeft size={16} aria-hidden="true" />
+            PayFlux home
+          </button>
+        )}
+
         <div className="auth-copy">
           <p className="eyebrow">Secure access</p>
           <h1>
             {isRegisterMode && 'Create your PayFlux profile'}
             {mode === 'login' && 'Welcome back'}
             {isRecoveryMode && 'Recover your account'}
+            {isVerifyMode && 'Verify your email'}
           </h1>
           <p>
             Sign in to access your wallet, saved beneficiaries, statements, and
@@ -163,7 +252,8 @@ export function AuthPage({ onAuthenticated }) {
           </p>
         </div>
 
-        <div className="auth-tabs" role="tablist" aria-label="Authentication mode">
+        {!isVerifyMode && (
+          <div className="auth-tabs" role="tablist" aria-label="Authentication mode">
           <button
             className={mode === 'login' ? 'active' : ''}
             type="button"
@@ -178,7 +268,8 @@ export function AuthPage({ onAuthenticated }) {
           >
             Register
           </button>
-        </div>
+          </div>
+        )}
 
         {successMessage && <div className="alert alert-success">{successMessage}</div>}
         {error && <div className="alert alert-error">{error}</div>}
@@ -198,7 +289,8 @@ export function AuthPage({ onAuthenticated }) {
             </label>
           )}
 
-          <label>
+          {!isVerifyMode && (
+            <label>
             Email
             <input
               name="email"
@@ -208,9 +300,36 @@ export function AuthPage({ onAuthenticated }) {
               placeholder="ali@example.com"
               required
             />
-          </label>
+            </label>
+          )}
 
-          {!isRecoveryMode && (
+          {isVerifyMode && (
+            <>
+              <div className="recovery-question-card">
+                <span>Verification email</span>
+                <strong>{formValues.email}</strong>
+              </div>
+
+              <label>
+                Verification code
+                <input
+                  inputMode="numeric"
+                  maxLength="6"
+                  name="verificationCode"
+                  pattern="[0-9]{6}"
+                  value={formValues.verificationCode}
+                  onChange={(event) => setFormValues((currentValues) => ({
+                    ...currentValues,
+                    verificationCode: event.target.value.replace(/\D/g, '').slice(0, 6),
+                  }))}
+                  placeholder="000000"
+                  required
+                />
+              </label>
+            </>
+          )}
+
+          {!isRecoveryMode && !isVerifyMode && (
             <label>
               Password
               <input
@@ -259,24 +378,73 @@ export function AuthPage({ onAuthenticated }) {
 
           {isRecoveryMode && recoveryQuestion && (
             <>
-              <div className="recovery-question-card">
-                <span>Security question</span>
-                <strong>{recoveryQuestion.securityQuestion}</strong>
+              <div className="recovery-method-tabs" role="tablist" aria-label="Password recovery method">
+                <button
+                  className={recoveryMethod === 'email' ? 'active' : ''}
+                  type="button"
+                  onClick={() => setRecoveryMethod('email')}
+                >
+                  Email code
+                </button>
+                {recoveryQuestion.securityQuestion && (
+                  <button
+                    className={recoveryMethod === 'question' ? 'active' : ''}
+                    type="button"
+                    onClick={() => setRecoveryMethod('question')}
+                  >
+                    Security answer
+                  </button>
+                )}
               </div>
 
-              <label>
-                Security answer
-                <input
-                  name="securityAnswer"
-                  type="text"
-                  value={formValues.securityAnswer}
-                  onChange={handleChange}
-                  placeholder="Enter your answer"
-                  minLength="3"
-                  maxLength="120"
-                  required
-                />
-              </label>
+              {recoveryMethod === 'email' && (
+                <>
+                  <div className="recovery-question-card">
+                    <span>Reset email</span>
+                    <strong>{recoveryQuestion.email}</strong>
+                  </div>
+
+                  <label>
+                    Reset code
+                    <input
+                      inputMode="numeric"
+                      maxLength="6"
+                      name="resetCode"
+                      pattern="[0-9]{6}"
+                      value={formValues.resetCode}
+                      onChange={(event) => setFormValues((currentValues) => ({
+                        ...currentValues,
+                        resetCode: event.target.value.replace(/\D/g, '').slice(0, 6),
+                      }))}
+                      placeholder="000000"
+                      required
+                    />
+                  </label>
+                </>
+              )}
+
+              {recoveryMethod === 'question' && recoveryQuestion.securityQuestion && (
+                <>
+                  <div className="recovery-question-card">
+                    <span>Security question</span>
+                    <strong>{recoveryQuestion.securityQuestion}</strong>
+                  </div>
+
+                  <label>
+                    Security answer
+                    <input
+                      name="securityAnswer"
+                      type="text"
+                      value={formValues.securityAnswer}
+                      onChange={handleChange}
+                      placeholder="Enter your answer"
+                      minLength="3"
+                      maxLength="120"
+                      required
+                    />
+                  </label>
+                </>
+              )}
 
               <label>
                 New password
@@ -306,9 +474,27 @@ export function AuthPage({ onAuthenticated }) {
           )}
 
           {isRecoveryMode && (
-            <button className="text-button" type="button" onClick={() => switchMode('login')}>
-              Back to login
-            </button>
+            <>
+              {recoveryQuestion && recoveryMethod === 'email' && (
+                <button className="text-button" type="button" disabled={isSubmitting} onClick={handleResendPasswordReset}>
+                  Resend reset code
+                </button>
+              )}
+              <button className="text-button" type="button" onClick={() => switchMode('login')}>
+                Back to login
+              </button>
+            </>
+          )}
+
+          {isVerifyMode && (
+            <>
+              <button className="text-button" type="button" disabled={isSubmitting} onClick={handleResendVerification}>
+                Resend verification code
+              </button>
+              <button className="text-button" type="button" onClick={() => switchMode('login')}>
+                Back to login
+              </button>
+            </>
           )}
         </form>
       </section>
@@ -323,6 +509,46 @@ function buttonText(mode, recoveryQuestion) {
   if (mode === 'recovery') {
     return recoveryQuestion ? 'Reset password' : 'Continue'
   }
+  if (mode === 'verify-email') {
+    return 'Verify email'
+  }
 
   return 'Login'
+}
+
+function verificationErrorMessage(error) {
+  if (error.code === 'INVALID_EMAIL_VERIFICATION_CODE') {
+    return 'The verification code is incorrect. Check your email and try again.'
+  }
+  if (error.code === 'EMAIL_VERIFICATION_EXPIRED') {
+    return 'This verification code has expired. Request a new code and try again.'
+  }
+  if (error.code === 'EMAIL_VERIFICATION_RESEND_COOLDOWN') {
+    return 'A verification code was sent recently. Please wait before requesting another code.'
+  }
+  if (error.code === 'EMAIL_VERIFICATION_LOCKED') {
+    return 'Too many incorrect verification attempts. Request a new code later.'
+  }
+
+  return error.message
+}
+
+function passwordResetErrorMessage(error) {
+  if (error.code === 'INVALID_PASSWORD_RESET_CODE') {
+    return 'The password reset code is incorrect. Check your email and try again.'
+  }
+  if (error.code === 'PASSWORD_RESET_CODE_EXPIRED') {
+    return 'This password reset code has expired. Request a new code and try again.'
+  }
+  if (error.code === 'PASSWORD_RESET_RESEND_COOLDOWN') {
+    return 'A reset code was sent recently. Please wait before requesting another code.'
+  }
+  if (error.code === 'PASSWORD_RESET_LOCKED') {
+    return 'Too many incorrect reset attempts. Request a new code later.'
+  }
+  if (error.code === 'SECURITY_ANSWER_INCORRECT') {
+    return 'The security answer is incorrect. Try again or use the email reset code.'
+  }
+
+  return error.message
 }
