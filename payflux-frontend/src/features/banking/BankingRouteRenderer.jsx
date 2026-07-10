@@ -27,6 +27,7 @@ export function BankingRouteRenderer({ state, actions }) {
         <WalletPage
           {...commonPageProps}
           walletDashboard={state.walletDashboard}
+          transferLimits={state.transferLimits}
           onRefresh={actions.loadDashboard}
         />
       )
@@ -46,10 +47,13 @@ export function BankingRouteRenderer({ state, actions }) {
           transactions={state.transactions}
           selectedTransaction={state.selectedTransaction}
           currentUserId={state.currentUser.id}
+          transferDisputes={state.transferDisputes}
           isExportingStatement={state.isExportingStatement}
           isLoadingTransactionDetails={state.isLoadingTransactionDetails}
+          isSubmittingDispute={state.isSubmittingDispute}
           onExportStatement={actions.handleExportStatement}
           onViewTransaction={actions.handleViewTransaction}
+          onOpenTransferDispute={actions.handleOpenTransferDispute}
           onCloseTransactionDetails={actions.closeTransactionDetails}
         />
       )
@@ -80,11 +84,17 @@ export function BankingRouteRenderer({ state, actions }) {
           users={state.adminUsers}
           wallets={state.adminWallets}
           transferActivities={state.adminTransferActivities}
+          transferDisputes={state.adminTransferDisputes}
           auditRecords={state.auditRecords}
           auditSummary={state.auditSummary}
+          isSearchingAuditRecords={state.isSearchingAuditRecords}
+          onSearchAuditRecords={actions.handleSearchAuditRecords}
           onSuspendWallet={actions.handleSuspendWallet}
           onActivateWallet={actions.handleActivateWallet}
           onReverseTransfer={actions.handleReverseTransfer}
+          onMarkDisputeUnderReview={actions.handleMarkDisputeUnderReview}
+          onRejectDispute={actions.handleRejectDispute}
+          onResolveDispute={actions.handleResolveDispute}
         />
       )
     default:
@@ -93,6 +103,7 @@ export function BankingRouteRenderer({ state, actions }) {
           {...commonPageProps}
           account={state.primaryAccount}
           walletDashboard={state.walletDashboard}
+          transferLimits={state.transferLimits}
           latestTransaction={state.transactions.at(0)}
           transactions={state.transactions}
           notifications={state.notifications}

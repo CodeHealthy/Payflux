@@ -9,6 +9,7 @@ import '../styles/DashboardPage.css'
 export function DashboardPage({
   account,
   walletDashboard,
+  transferLimits,
   latestTransaction,
   transactions,
   notifications,
@@ -46,6 +47,7 @@ export function DashboardPage({
           {activeAction === 'transfer' && (
             <WalletTransferPanel
               beneficiaries={beneficiaries}
+              transferLimits={transferLimits}
               isSubmitting={isTransferring}
               isVerifyingRecipient={isVerifyingRecipient}
               isResendingOtp={isResendingTransferOtp}

@@ -2,6 +2,11 @@
   grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
 }
 
+.wallet-side-stack {
+  display: grid;
+  gap: 18px;
+}
+
 .wallet-actions-grid {
   display: grid;
   gap: 18px;
@@ -48,4 +53,113 @@
   background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
   justify-self: start;
+}
+
+.transfer-limit-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.transfer-limit-heading {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.transfer-limit-heading h2 {
+  margin: 0;
+}
+
+.transfer-limit-icon {
+  align-items: center;
+  background: #e8f2ff;
+  border-radius: 8px;
+  color: #006cff;
+  display: inline-flex;
+  height: 42px;
+  justify-content: center;
+  width: 42px;
+}
+
+.limit-progress-group {
+  display: grid;
+  gap: 12px;
+}
+
+.limit-progress-card {
+  background: #f8fbff;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.limit-progress-meta span,
+.limit-progress-meta strong,
+.limit-progress-meta small {
+  display: block;
+}
+
+.limit-progress-meta span,
+.single-limit-note span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.limit-progress-meta strong,
+.single-limit-note strong {
+  color: #041941;
+  margin-top: 4px;
+}
+
+.limit-progress-meta small {
+  color: #047857;
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 3px;
+}
+
+.limit-progress-meta small.limit-reached {
+  color: #991b1b;
+}
+
+.limit-progress-track {
+  background: #e5e7eb;
+  border-radius: 999px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.limit-progress-track span {
+  background: linear-gradient(90deg, #006cff, #16a34a);
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+}
+
+.single-limit-note {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 14px;
+}
+
+.single-limit-note svg {
+  color: #006cff;
+}
+
+.transfer-limit-reset {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  margin: 0;
 }

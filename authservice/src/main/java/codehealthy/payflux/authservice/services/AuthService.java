@@ -1,5 +1,6 @@
 package codehealthy.payflux.authservice.services;
 
+import codehealthy.payflux.audit.events.AuditTrailEvent;
 import codehealthy.payflux.authservice.dto.AuthResponse;
 import codehealthy.payflux.authservice.dto.ForgotPasswordRequest;
 import codehealthy.payflux.authservice.dto.LoginRequest;
@@ -23,7 +24,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -36,6 +40,7 @@ public class AuthService {
 	private final RefreshTokenService refreshTokenService;
 	private final EmailVerificationService emailVerificationService;
 	private final PasswordResetCodeService passwordResetCodeService;
+	private final AuditEventPublisher auditEventPublisher;
 
 	public AuthService(
 			AppUserRepository appUserRepository,
@@ -45,7 +50,8 @@ public class AuthService {
 			LoginProtectionService loginProtectionService,
 			RefreshTokenService refreshTokenService,
 			EmailVerificationService emailVerificationService,
-			PasswordResetCodeService passwordResetCodeService
+			PasswordResetCodeService passwordResetCodeService,
+			AuditEventPublisher auditEventPublisher
 	) {
 		this.appUserRepository = appUserRepository;
 		this.passwordEncoder = passwordEncoder;
@@ -55,6 +61,7 @@ public class AuthService {
 		this.refreshTokenService = refreshTokenService;
 		this.emailVerificationService = emailVerificationService;
 		this.passwordResetCodeService = passwordResetCodeService;
+		this.auditEventPublisher = auditEventPublisher;
 	}
 
 	public RegistrationResponse register(RegisterRequest request) {
@@ -74,6 +81,15 @@ public class AuthService {
 		);
 		AppUser savedUser = appUserRepository.save(user);
 		emailVerificationService.sendInitialCode(savedUser);
+		audit(
+				"EMAIL_VERIFICATION_REQUESTED",
+				savedUser.getId(),
+				savedUser.getId(),
+				"USER",
+				savedUser.getId().toString(),
+				"Email verification requested for " + savedUser.getEmail(),
+				Map.of("email", savedUser.getEmail(), "reason", "registration")
+		);
 
 		return RegistrationResponse.verificationRequired(savedUser.getEmail());
 	}
@@ -86,19 +102,55 @@ public class AuthService {
 		AppUser user = appUserRepository.findByEmail(email)
 				.orElseThrow(() -> {
 					loginProtectionService.recordFailure(email, normalizedClientIp);
+					audit(
+							"LOGIN_FAILED",
+							null,
+							null,
+							"USER",
+							email,
+							"Login failed for unknown email " + email,
+							Map.of("email", email, "clientIp", normalizedClientIp, "reason", "unknown_user")
+					);
 					return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
 				});
 
 		if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
 			loginProtectionService.recordFailure(email, normalizedClientIp);
+			audit(
+					"LOGIN_FAILED",
+					user.getId(),
+					user.getId(),
+					"USER",
+					user.getId().toString(),
+					"Login failed for " + user.getEmail(),
+					Map.of("email", user.getEmail(), "clientIp", normalizedClientIp, "reason", "invalid_password")
+			);
 			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
 		}
 		if (!user.isEmailVerified()) {
 			emailVerificationService.sendInitialCode(user);
+			audit(
+					"LOGIN_FAILED",
+					user.getId(),
+					user.getId(),
+					"USER",
+					user.getId().toString(),
+					"Login blocked until email verification for " + user.getEmail(),
+					Map.of("email", user.getEmail(), "clientIp", normalizedClientIp, "reason", "email_unverified")
+			);
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Email verification is required before login");
 		}
 
 		loginProtectionService.recordSuccess(email, normalizedClientIp);
+		audit(
+				"LOGIN_SUCCEEDED",
+				user.getId(),
+				user.getId(),
+				"USER",
+				user.getId().toString(),
+				"User logged in successfully",
+				Map.of("email", user.getEmail(), "clientIp", normalizedClientIp)
+		);
 		return createAuthResponse(user);
 	}
 
@@ -113,6 +165,15 @@ public class AuthService {
 		user.markEmailVerified();
 		AppUser verifiedUser = appUserRepository.save(user);
 		publishUserRegistered(verifiedUser);
+		audit(
+				"EMAIL_VERIFIED",
+				verifiedUser.getId(),
+				verifiedUser.getId(),
+				"USER",
+				verifiedUser.getId().toString(),
+				"Email verified for " + verifiedUser.getEmail(),
+				Map.of("email", verifiedUser.getEmail())
+		);
 	}
 
 	public void resendEmailVerification(ForgotPasswordRequest request) {
@@ -123,6 +184,15 @@ public class AuthService {
 		}
 
 		emailVerificationService.resendCode(user);
+		audit(
+				"EMAIL_VERIFICATION_REQUESTED",
+				user.getId(),
+				user.getId(),
+				"USER",
+				user.getId().toString(),
+				"Email verification resent for " + user.getEmail(),
+				Map.of("email", user.getEmail(), "reason", "resend")
+		);
 	}
 
 	public AuthResponse refresh(RefreshTokenRequest request) {
@@ -144,6 +214,15 @@ public class AuthService {
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No PayFlux user exists for this email"));
 
 		passwordResetCodeService.sendCode(user);
+		audit(
+				"PASSWORD_RESET_REQUESTED",
+				user.getId(),
+				user.getId(),
+				"USER",
+				user.getId().toString(),
+				"Password reset requested for " + user.getEmail(),
+				Map.of("email", user.getEmail(), "method", "email_code")
+		);
 
 		return new PasswordRecoveryQuestionResponse(user.getEmail(), user.getSecurityQuestion());
 	}
@@ -151,9 +230,11 @@ public class AuthService {
 	public void resetPassword(ResetPasswordRequest request) {
 		AppUser user = appUserRepository.findByEmail(normalizeEmail(request.email()))
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No PayFlux user exists for this email"));
+		String recoveryMethod;
 
 		if (passwordResetCodeService.hasResetCode(request.resetCode())) {
 			passwordResetCodeService.verify(user, request.resetCode());
+			recoveryMethod = "email_code";
 		} else {
 			if (!user.hasSecurityQuestion()) {
 				throw new ResponseStatusException(HttpStatus.CONFLICT, "Password recovery is not configured for this account");
@@ -161,11 +242,21 @@ public class AuthService {
 			if (!passwordEncoder.matches(normalizeSecurityAnswer(request.securityAnswer()), user.getSecurityAnswerHash())) {
 				throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Security answer is incorrect");
 			}
+			recoveryMethod = "security_question";
 		}
 
 		user.updatePassword(passwordEncoder.encode(request.newPassword()));
 		appUserRepository.save(user);
 		refreshTokenService.revokeAllForUser(user.getId());
+		audit(
+				"PASSWORD_RESET_COMPLETED",
+				user.getId(),
+				user.getId(),
+				"USER",
+				user.getId().toString(),
+				"Password reset completed for " + user.getEmail(),
+				Map.of("email", user.getEmail(), "method", recoveryMethod)
+		);
 	}
 
 	public UserResponse me(Long userId) {
@@ -175,7 +266,17 @@ public class AuthService {
 	public UserResponse updateProfile(Long userId, UpdateProfileRequest request) {
 		AppUser user = findUser(userId);
 		user.updateProfile(normalizeDisplayText(request.fullName()));
-		return UserResponse.from(appUserRepository.save(user));
+		AppUser savedUser = appUserRepository.save(user);
+		audit(
+				"PROFILE_UPDATED",
+				savedUser.getId(),
+				savedUser.getId(),
+				"USER",
+				savedUser.getId().toString(),
+				"User profile updated",
+				Map.of("email", savedUser.getEmail())
+		);
+		return UserResponse.from(savedUser);
 	}
 
 	public void updatePassword(Long userId, UpdatePasswordRequest request) {
@@ -184,6 +285,15 @@ public class AuthService {
 		user.updatePassword(passwordEncoder.encode(request.newPassword()));
 		appUserRepository.save(user);
 		refreshTokenService.revokeAllForUser(user.getId());
+		audit(
+				"PASSWORD_CHANGED",
+				user.getId(),
+				user.getId(),
+				"USER",
+				user.getId().toString(),
+				"User changed password from account settings",
+				Map.of("email", user.getEmail())
+		);
 	}
 
 	public UserResponse updateSecurityQuestion(Long userId, UpdateSecurityQuestionRequest request) {
@@ -193,7 +303,17 @@ public class AuthService {
 				normalizeDisplayText(request.securityQuestion()),
 				passwordEncoder.encode(normalizeSecurityAnswer(request.securityAnswer()))
 		);
-		return UserResponse.from(appUserRepository.save(user));
+		AppUser savedUser = appUserRepository.save(user);
+		audit(
+				"SECURITY_QUESTION_UPDATED",
+				savedUser.getId(),
+				savedUser.getId(),
+				"USER",
+				savedUser.getId().toString(),
+				"Security question updated",
+				Map.of("email", savedUser.getEmail())
+		);
+		return UserResponse.from(savedUser);
 	}
 
 	private String normalizeClientIp(String clientIp) {
@@ -239,6 +359,29 @@ public class AuthService {
 				user.getFullName(),
 				user.getEmail(),
 				user.getCreatedAt()
+		));
+	}
+
+	private void audit(
+			String action,
+			Long actorUserId,
+			Long subjectUserId,
+			String aggregateType,
+			String aggregateId,
+			String summary,
+			Map<String, Object> details
+	) {
+		auditEventPublisher.publish(new AuditTrailEvent(
+				UUID.randomUUID().toString(),
+				"authservice",
+				action,
+				actorUserId,
+				subjectUserId,
+				aggregateType,
+				aggregateId,
+				summary,
+				details,
+				Instant.now()
 		));
 	}
 }

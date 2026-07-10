@@ -169,6 +169,76 @@ textarea {
   padding: 0 12px;
 }
 
+.form-field {
+  color: #1f2937;
+  display: grid;
+  font-size: 14px;
+  font-weight: 800;
+  gap: 8px;
+  min-width: 0;
+}
+
+.form-field-label {
+  align-items: center;
+  color: #22304a;
+  display: flex;
+  gap: 8px;
+  line-height: 1.2;
+}
+
+.field-control {
+  display: block;
+  position: relative;
+}
+
+.field-control:focus-within .field-icon {
+  color: #006cff;
+}
+
+.field-icon {
+  color: #64748b;
+  left: 14px;
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: color 160ms ease;
+  z-index: 1;
+}
+
+.field-control:has(textarea) .field-icon {
+  top: 23px;
+}
+
+.field-input {
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+  width: 100%;
+}
+
+.field-input.with-icon {
+  padding-left: 42px;
+}
+
+select.field-input {
+  cursor: pointer;
+}
+
+.field-input:disabled {
+  background: #f8fafc;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.form-field-hint {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 textarea {
   line-height: 1.5;
   min-height: 96px;
@@ -227,6 +297,13 @@ button:disabled {
 .ghost-button {
   background: #f3f4f6;
   color: #374151;
+}
+
+.icon-text-button {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
+  justify-content: center;
 }
 
 .text-button {
@@ -496,6 +573,124 @@ button:disabled {
   grid-template-columns: minmax(360px, 0.8fr) minmax(0, 1.2fr);
 }
 
+.audit-filter-panel {
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 18px;
+  padding: 16px;
+}
+
+.audit-filter-toolbar {
+  align-items: center;
+  border-bottom: 1px solid #e8eef8;
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: space-between;
+  margin-bottom: 2px;
+  padding-bottom: 14px;
+}
+
+.audit-filter-toolbar h3 {
+  color: #111827;
+  font-size: 18px;
+  margin: 0;
+}
+
+.audit-filter-toolbar span {
+  background: #e8f2ff;
+  border-radius: 999px;
+  color: #0057cc;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 7px 10px;
+}
+
+.audit-keyword-field,
+.audit-filter-actions,
+.filter-chip-row {
+  grid-column: 1 / -1;
+}
+
+.audit-filter-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.filter-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-chip {
+  align-items: center;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #0057cc;
+  display: inline-flex;
+  font-size: 12px;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 10px;
+}
+
+.filter-chip:hover {
+  background: #dbeafe;
+}
+
+.filter-chip span {
+  color: #1d4ed8;
+  font-family: var(--font-mono);
+  font-weight: 900;
+}
+
+.audit-detail-dialog {
+  max-width: 620px;
+}
+
+.audit-detail-summary {
+  background: #f8fbff;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  color: #334155;
+  font-weight: 700;
+  padding: 14px;
+}
+
+.audit-detail-summary p {
+  margin: 0;
+}
+
+.audit-payload-panel {
+  background: #0f172a;
+  border-radius: 8px;
+  color: #dbeafe;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.audit-payload-panel .eyebrow {
+  color: #93c5fd;
+  margin: 0;
+}
+
+.audit-payload-panel pre {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  margin: 0;
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .statements-page {
   display: grid;
   gap: 18px;
@@ -731,6 +926,172 @@ td {
 .admin-wallet-cell strong {
   font-family: var(--font-mono);
   font-size: 13px;
+}
+
+.admin-action-stack {
+  align-items: start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dispute-status-card {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  color: #9a3412;
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+}
+
+.dispute-status-card span {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.dispute-status-card strong {
+  color: #9a3412;
+}
+
+.dispute-status-card p {
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.dispute-form {
+  border-top: 1px solid #eef2f7;
+  padding-top: 16px;
+}
+
+.dispute-center {
+  display: grid;
+  gap: 16px;
+}
+
+.dispute-list {
+  display: grid;
+  gap: 12px;
+}
+
+.dispute-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+}
+
+.dispute-card-header {
+  align-items: flex-start;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.dispute-card-header h3 {
+  color: #111827;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.dispute-card-header small {
+  color: #64748b;
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.dispute-card-icon {
+  align-items: center;
+  background: #e8f2ff;
+  border-radius: 8px;
+  color: #006cff;
+  display: inline-flex;
+  height: 42px;
+  justify-content: center;
+  width: 42px;
+}
+
+.dispute-timeline {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dispute-timeline span {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #64748b;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 900;
+  gap: 7px;
+  justify-content: center;
+  min-height: 36px;
+  padding: 8px;
+}
+
+.dispute-timeline span.complete {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+  color: #047857;
+}
+
+.dispute-timeline.rejected span.complete {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.dispute-meta {
+  border-top: 1px solid #eef2f7;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-top: 14px;
+}
+
+.dispute-meta div {
+  display: grid;
+  gap: 3px;
+}
+
+.dispute-meta dt {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.dispute-meta dd {
+  color: #111827;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.secure-confirmation-header.compact {
+  align-items: center;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.secure-confirmation-header.compact h3 {
+  color: #111827;
+  font-size: 18px;
+  margin: 0;
 }
 
 .settings-page {
@@ -1104,6 +1465,12 @@ td {
   padding: 12px 14px;
 }
 
+.confirmation-error.compact {
+  font-size: 12px;
+  margin-top: -4px;
+  padding: 10px 12px;
+}
+
 .confirmation-notice {
   background: #ecfdf5;
   border: 1px solid #bbf7d0;
@@ -1120,6 +1487,40 @@ td {
   display: flex;
   gap: 12px;
   justify-content: space-between;
+}
+
+.transfer-limit-inline {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.transfer-limit-inline article {
+  background: #f8fbff;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  min-width: 0;
+  padding: 10px;
+}
+
+.transfer-limit-inline span,
+.transfer-limit-inline strong {
+  display: block;
+}
+
+.transfer-limit-inline span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.transfer-limit-inline strong {
+  color: #041941;
+  font-size: 13px;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
 }
 
 .resend-otp-row span {
@@ -1233,6 +1634,7 @@ td {
 
   .admin-hero,
   .admin-grid,
+  .audit-filter-panel,
   .settings-hero,
   .settings-overview-grid,
   .settings-grid {
@@ -1265,6 +1667,25 @@ td {
 
   .compact-button {
     justify-self: start;
+  }
+
+  .audit-filter-toolbar {
+    align-items: flex-start;
+    display: grid;
+    gap: 10px;
+  }
+
+  .audit-filter-toolbar span {
+    justify-self: start;
+  }
+
+  .audit-filter-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .audit-filter-actions button {
+    width: 100%;
   }
 }
 
@@ -1421,6 +1842,19 @@ td {
 
   .confirmation-summary {
     grid-template-columns: 1fr;
+  }
+
+  .transfer-limit-inline {
+    grid-template-columns: 1fr;
+  }
+
+  .dispute-card-header,
+  .dispute-timeline {
+    grid-template-columns: 1fr;
+  }
+
+  .dispute-card-header .status-pill {
+    justify-self: start;
   }
 
   .confirmation-form input {

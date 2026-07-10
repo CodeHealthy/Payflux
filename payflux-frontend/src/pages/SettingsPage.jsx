@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { HelpCircle, KeyRound, LockKeyhole, Mail, ShieldQuestion, UserRound } from 'lucide-react'
+import { FormField } from '../components/FormField'
 
 export function SettingsPage({
   currentUser,
@@ -97,19 +99,17 @@ export function SettingsPage({
             <p className="eyebrow">Profile</p>
             <h2>Identity details</h2>
           </div>
-          <label>
-            Email
+          <FormField label="Email" icon={Mail}>
             <input value={currentUser.email} disabled />
-          </label>
-          <label>
-            Full name
+          </FormField>
+          <FormField label="Full name" icon={UserRound}>
             <input
               value={profileForm.fullName}
               onChange={handleProfileChange}
               placeholder="Your full name"
               required
             />
-          </label>
+          </FormField>
           <button className="primary-button" type="submit" disabled={isUpdatingSettings}>
             Save profile
           </button>
@@ -123,8 +123,7 @@ export function SettingsPage({
           <p className="form-support-text">
             Use a strong password you do not use anywhere else. Updating it revokes active sessions.
           </p>
-          <label>
-            Current password
+          <FormField label="Current password" icon={LockKeyhole}>
             <input
               name="currentPassword"
               type="password"
@@ -132,9 +131,8 @@ export function SettingsPage({
               onChange={handlePasswordChange}
               required
             />
-          </label>
-          <label>
-            New password
+          </FormField>
+          <FormField label="New password" hint="Use at least 8 characters." icon={KeyRound}>
             <input
               name="newPassword"
               type="password"
@@ -143,7 +141,7 @@ export function SettingsPage({
               minLength="8"
               required
             />
-          </label>
+          </FormField>
           <button className="primary-button" type="submit" disabled={isUpdatingSettings}>
             Update password
           </button>
@@ -157,8 +155,7 @@ export function SettingsPage({
           <p className="form-support-text">
             This remains available as a backup to the email reset code flow.
           </p>
-          <label>
-            Current password
+          <FormField label="Current password" icon={LockKeyhole}>
             <input
               name="currentPassword"
               type="password"
@@ -166,9 +163,8 @@ export function SettingsPage({
               onChange={handleSecurityChange}
               required
             />
-          </label>
-          <label>
-            Security question
+          </FormField>
+          <FormField label="Security question" hint="Avoid answers that are public or easy to guess." icon={ShieldQuestion}>
             <input
               name="securityQuestion"
               value={securityForm.securityQuestion}
@@ -178,9 +174,8 @@ export function SettingsPage({
               maxLength="160"
               required
             />
-          </label>
-          <label>
-            Security answer
+          </FormField>
+          <FormField label="Security answer" hint="We store this securely for account recovery." icon={HelpCircle}>
             <input
               name="securityAnswer"
               value={securityForm.securityAnswer}
@@ -190,7 +185,7 @@ export function SettingsPage({
               maxLength="120"
               required
             />
-          </label>
+          </FormField>
           <button className="primary-button" type="submit" disabled={isUpdatingSettings}>
             Save recovery question
           </button>

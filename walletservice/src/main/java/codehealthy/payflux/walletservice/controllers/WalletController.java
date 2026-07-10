@@ -1,14 +1,19 @@
 package codehealthy.payflux.walletservice.controllers;
 
 import codehealthy.payflux.walletservice.dto.AdminWalletStatusRequest;
+import codehealthy.payflux.walletservice.dto.CreateTransferDisputeRequest;
 import codehealthy.payflux.walletservice.dto.DepositRequest;
 import codehealthy.payflux.walletservice.dto.ConfirmTransferRequest;
 import codehealthy.payflux.walletservice.dto.ReverseTransferRequest;
+import codehealthy.payflux.walletservice.dto.ResolveTransferDisputeRequest;
 import codehealthy.payflux.walletservice.dto.TransferRequest;
+import codehealthy.payflux.walletservice.dto.TransferLimitSummaryResponse;
 import codehealthy.payflux.walletservice.dto.TransferConfirmationResponse;
 import codehealthy.payflux.walletservice.dto.WalletDashboardResponse;
 import codehealthy.payflux.walletservice.dto.WalletResponse;
 import codehealthy.payflux.walletservice.dto.WalletTransferActivityResponse;
+import codehealthy.payflux.walletservice.dto.WalletTransferDisputeResponse;
+import codehealthy.payflux.walletservice.services.TransferLimitService;
 import codehealthy.payflux.walletservice.services.WalletService;
 import codehealthy.payflux.walletservice.services.WalletStatementService;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -36,10 +41,16 @@ public class WalletController {
 
 	private final WalletService walletService;
 	private final WalletStatementService walletStatementService;
+	private final TransferLimitService transferLimitService;
 
-	public WalletController(WalletService walletService, WalletStatementService walletStatementService) {
+	public WalletController(
+			WalletService walletService,
+			WalletStatementService walletStatementService,
+			TransferLimitService transferLimitService
+	) {
 		this.walletService = walletService;
 		this.walletStatementService = walletStatementService;
+		this.transferLimitService = transferLimitService;
 	}
 
 	@GetMapping("/me")
@@ -55,6 +66,11 @@ public class WalletController {
 	@PostMapping("/transfers")
 	public WalletDashboardResponse transfer(@AuthenticationPrincipal Jwt jwt, @RequestBody TransferRequest request) {
 		return walletService.transfer(currentUserId(jwt), request);
+	}
+
+	@GetMapping("/transfer-limits")
+	public TransferLimitSummaryResponse findTransferLimits(@AuthenticationPrincipal Jwt jwt) {
+		return transferLimitService.findSummary(currentUserId(jwt));
 	}
 
 	@PostMapping("/transfers/confirmations")
@@ -73,6 +89,20 @@ public class WalletController {
 	@PostMapping("/transfers/confirm")
 	public WalletDashboardResponse confirmTransfer(@AuthenticationPrincipal Jwt jwt, @RequestBody ConfirmTransferRequest request) {
 		return walletService.confirmTransfer(currentUserId(jwt), request);
+	}
+
+	@GetMapping("/transfers/disputes")
+	public List<WalletTransferDisputeResponse> findDisputes(@AuthenticationPrincipal Jwt jwt) {
+		return walletService.findDisputes(currentUserId(jwt));
+	}
+
+	@PostMapping("/transfers/{transactionReference}/disputes")
+	public WalletTransferDisputeResponse openDispute(
+			@AuthenticationPrincipal Jwt jwt,
+			@PathVariable String transactionReference,
+			@RequestBody CreateTransferDisputeRequest request
+	) {
+		return walletService.openDispute(currentUserId(jwt), transactionReference, request);
 	}
 
 	@GetMapping("/statements/export")
@@ -107,6 +137,37 @@ public class WalletController {
 	@GetMapping("/admin/transfers")
 	public List<WalletTransferActivityResponse> findAdminTransferActivities() {
 		return walletService.findAdminTransferActivities();
+	}
+
+	@GetMapping("/admin/disputes")
+	public List<WalletTransferDisputeResponse> findAdminDisputes() {
+		return walletService.findAdminDisputes();
+	}
+
+	@PostMapping("/admin/disputes/{disputeId}/review")
+	public WalletTransferDisputeResponse markDisputeUnderReview(
+			@AuthenticationPrincipal Jwt jwt,
+			@PathVariable Long disputeId
+	) {
+		return walletService.markDisputeUnderReview(currentUserId(jwt), disputeId);
+	}
+
+	@PostMapping("/admin/disputes/{disputeId}/reject")
+	public WalletTransferDisputeResponse rejectDispute(
+			@AuthenticationPrincipal Jwt jwt,
+			@PathVariable Long disputeId,
+			@RequestBody(required = false) ResolveTransferDisputeRequest request
+	) {
+		return walletService.rejectDispute(currentUserId(jwt), disputeId, request);
+	}
+
+	@PostMapping("/admin/disputes/{disputeId}/resolve")
+	public WalletTransferDisputeResponse resolveDispute(
+			@AuthenticationPrincipal Jwt jwt,
+			@PathVariable Long disputeId,
+			@RequestBody(required = false) ResolveTransferDisputeRequest request
+	) {
+		return walletService.resolveDisputeWithReversal(currentUserId(jwt), disputeId, request);
 	}
 
 	@PostMapping("/admin/users/{ownerUserId}/suspend")

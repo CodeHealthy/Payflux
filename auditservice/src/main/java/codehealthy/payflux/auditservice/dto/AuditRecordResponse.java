@@ -14,6 +14,7 @@ public record AuditRecordResponse(
 		String aggregateType,
 		String aggregateId,
 		String summary,
+		String payload,
 		Instant eventOccurredAt,
 		Instant createdAt
 ) {
@@ -28,6 +29,7 @@ public record AuditRecordResponse(
 				auditRecord.getAggregateType(),
 				auditRecord.getAggregateId(),
 				auditRecord.getSummary(),
+				auditRecord.getPayload(),
 				auditRecord.getEventOccurredAt(),
 				auditRecord.getCreatedAt()
 		);

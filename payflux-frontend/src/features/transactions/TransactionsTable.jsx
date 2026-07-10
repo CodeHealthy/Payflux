@@ -10,11 +10,16 @@ export function TransactionsTable({
   transactions,
   selectedTransaction,
   currentUserId,
+  transferDisputes = [],
   isLoading,
   isLoadingDetails,
+  isSubmittingDispute,
   onViewTransaction,
+  onOpenTransferDispute,
   onCloseTransactionDetails,
 }) {
+  const disputesByReference = new Map(transferDisputes.map((dispute) => [dispute.transactionReference, dispute]))
+
   return (
     <section className="panel">
       <div className="panel-header">
@@ -43,12 +48,14 @@ export function TransactionsTable({
                 <th>From</th>
                 <th>To</th>
                 <th>Status</th>
+                <th>Dispute</th>
                 <th>Completed</th>
               </tr>
             </thead>
             <tbody>
               {transactions.map((transaction) => {
                 const isIncoming = transaction.receiverUserId === currentUserId
+                const dispute = disputesByReference.get(transaction.transactionReference)
 
                 return (
                   <tr
@@ -72,6 +79,15 @@ export function TransactionsTable({
                     <td className="mono-cell" data-label="From">{transaction.senderAccountNumber}</td>
                     <td className="mono-cell" data-label="To">{transaction.receiverAccountNumber}</td>
                     <td data-label="Status"><span className="status-pill">{transaction.status}</span></td>
+                    <td data-label="Dispute">
+                      {dispute ? (
+                        <span className="status-pill warning">{dispute.status}</span>
+                      ) : isIncoming ? (
+                        <span className="muted-cell">Not available</span>
+                      ) : (
+                        <span className="muted-cell">None</span>
+                      )}
+                    </td>
                     <td data-label="Completed">{formatDateTime(transaction.completedAt)}</td>
                   </tr>
                 )
@@ -83,6 +99,9 @@ export function TransactionsTable({
       <TransactionReceiptPanel
         transaction={selectedTransaction}
         currentUserId={currentUserId}
+        dispute={selectedTransaction ? disputesByReference.get(selectedTransaction.transactionReference) : null}
+        isSubmittingDispute={isSubmittingDispute}
+        onOpenDispute={onOpenTransferDispute}
         onClose={onCloseTransactionDetails}
       />
     </section>

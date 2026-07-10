@@ -117,6 +117,10 @@ public class AuditRecord {
 		return summary;
 	}
 
+	public String getPayload() {
+		return payload;
+	}
+
 	public Instant getEventOccurredAt() {
 		return eventOccurredAt;
 	}

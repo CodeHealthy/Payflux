@@ -1,28 +1,36 @@
 package codehealthy.payflux.walletservice.services;
 
+import codehealthy.payflux.audit.events.AuditTrailEvent;
 import codehealthy.payflux.events.AdminWalletStatusChangedEvent;
 import codehealthy.payflux.events.AccountCreatedEvent;
 import codehealthy.payflux.events.TransferCompletedEvent;
+import codehealthy.payflux.events.TransferDisputeStatusChangedEvent;
 import codehealthy.payflux.events.TransferOtpRequestedEvent;
 import codehealthy.payflux.walletservice.dto.DepositRequest;
 import codehealthy.payflux.walletservice.dto.ConfirmTransferRequest;
 import codehealthy.payflux.walletservice.dto.AdminWalletStatusRequest;
+import codehealthy.payflux.walletservice.dto.CreateTransferDisputeRequest;
 import codehealthy.payflux.walletservice.dto.PendingTransfer;
 import codehealthy.payflux.walletservice.dto.ReverseTransferRequest;
+import codehealthy.payflux.walletservice.dto.ResolveTransferDisputeRequest;
 import codehealthy.payflux.walletservice.dto.TransferRequest;
 import codehealthy.payflux.walletservice.dto.TransferConfirmationResponse;
 import codehealthy.payflux.walletservice.dto.WalletDashboardResponse;
 import codehealthy.payflux.walletservice.dto.WalletResponse;
 import codehealthy.payflux.walletservice.dto.WalletTransactionResponse;
 import codehealthy.payflux.walletservice.dto.WalletTransferActivityResponse;
+import codehealthy.payflux.walletservice.dto.WalletTransferDisputeResponse;
 import codehealthy.payflux.walletservice.models.Wallet;
 import codehealthy.payflux.walletservice.models.WalletStatus;
 import codehealthy.payflux.walletservice.models.WalletTransaction;
 import codehealthy.payflux.walletservice.models.WalletTransactionType;
 import codehealthy.payflux.walletservice.models.WalletTransfer;
+import codehealthy.payflux.walletservice.models.WalletTransferDispute;
+import codehealthy.payflux.walletservice.models.WalletTransferDisputeStatus;
 import codehealthy.payflux.walletservice.models.WalletTransferStatus;
 import codehealthy.payflux.walletservice.repositories.WalletRepository;
 import codehealthy.payflux.walletservice.repositories.WalletTransactionRepository;
+import codehealthy.payflux.walletservice.repositories.WalletTransferDisputeRepository;
 import codehealthy.payflux.walletservice.repositories.WalletTransferRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -37,6 +45,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -47,32 +56,38 @@ public class WalletService {
 	private final WalletRepository walletRepository;
 	private final WalletTransactionRepository transactionRepository;
 	private final WalletTransferRepository transferRepository;
+	private final WalletTransferDisputeRepository disputeRepository;
 	private final OutboxService outboxService;
 	private final TransferConfirmationService transferConfirmationService;
 	private final TransferRateLimitService transferRateLimitService;
 	private final TransferOtpResendLimitService transferOtpResendLimitService;
 	private final TransferIdempotencyService transferIdempotencyService;
+	private final TransferLimitService transferLimitService;
 	private final WalletLedgerService walletLedgerService;
 
 	public WalletService(
 			WalletRepository walletRepository,
 			WalletTransactionRepository transactionRepository,
 			WalletTransferRepository transferRepository,
+			WalletTransferDisputeRepository disputeRepository,
 			OutboxService outboxService,
 			TransferConfirmationService transferConfirmationService,
 			TransferRateLimitService transferRateLimitService,
 			TransferOtpResendLimitService transferOtpResendLimitService,
 			TransferIdempotencyService transferIdempotencyService,
+			TransferLimitService transferLimitService,
 			WalletLedgerService walletLedgerService
 	) {
 		this.walletRepository = walletRepository;
 		this.transactionRepository = transactionRepository;
 		this.transferRepository = transferRepository;
+		this.disputeRepository = disputeRepository;
 		this.outboxService = outboxService;
 		this.transferConfirmationService = transferConfirmationService;
 		this.transferRateLimitService = transferRateLimitService;
 		this.transferOtpResendLimitService = transferOtpResendLimitService;
 		this.transferIdempotencyService = transferIdempotencyService;
+		this.transferLimitService = transferLimitService;
 		this.walletLedgerService = walletLedgerService;
 	}
 
@@ -125,6 +140,112 @@ public class WalletService {
 				.toList();
 	}
 
+	@Transactional(readOnly = true)
+	public List<WalletTransferDisputeResponse> findDisputes(Long ownerUserId) {
+		return disputeRepository.findTop50ByOwnerUserIdOrderByUpdatedAtDesc(ownerUserId)
+				.stream()
+				.map(WalletTransferDisputeResponse::from)
+				.toList();
+	}
+
+	@Transactional(readOnly = true)
+	public List<WalletTransferDisputeResponse> findAdminDisputes() {
+		return disputeRepository.findTop100ByOrderByUpdatedAtDesc()
+				.stream()
+				.map(WalletTransferDisputeResponse::from)
+				.toList();
+	}
+
+	@Transactional
+	public WalletTransferDisputeResponse openDispute(
+			Long ownerUserId,
+			String transactionReference,
+			CreateTransferDisputeRequest request
+	) {
+		String reference = requireText(transactionReference, "transactionReference");
+		WalletTransfer transfer = transferRepository.findByTransactionReference(reference)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transfer not found"));
+		if (!transfer.getOwnerUserId().equals(ownerUserId)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the sender can dispute this transfer");
+		}
+		if (transfer.getStatus() != WalletTransferStatus.COMPLETED) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Only completed transfers can be disputed");
+		}
+		if (disputeRepository.existsByTransactionReferenceAndOwnerUserIdAndStatusIn(
+				reference,
+				ownerUserId,
+				List.of(WalletTransferDisputeStatus.OPEN, WalletTransferDisputeStatus.UNDER_REVIEW)
+		)) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Transfer already has an open dispute");
+		}
+
+		WalletTransferDispute dispute = disputeRepository.save(new WalletTransferDispute(
+				transfer,
+				ownerUserId,
+				optionalText(request == null ? null : request.category(), "General review"),
+				requireText(request == null ? null : request.message(), "message")
+		));
+		enqueueDisputeAudit("TRANSFER_DISPUTE_OPENED", ownerUserId, dispute, "Customer opened transfer dispute");
+		enqueueDisputeStatusChanged(dispute);
+		return WalletTransferDisputeResponse.from(dispute);
+	}
+
+	@Transactional
+	public WalletTransferDisputeResponse markDisputeUnderReview(Long adminUserId, Long disputeId) {
+		WalletTransferDispute dispute = disputeRepository.findByIdForUpdate(disputeId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transfer dispute not found"));
+		if (dispute.getStatus() == WalletTransferDisputeStatus.RESOLVED
+				|| dispute.getStatus() == WalletTransferDisputeStatus.REJECTED) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Closed disputes cannot be reopened");
+		}
+
+		dispute.markUnderReview(adminUserId);
+		enqueueDisputeAudit("TRANSFER_DISPUTE_UNDER_REVIEW", adminUserId, dispute, "Admin started dispute review");
+		enqueueDisputeStatusChanged(dispute);
+		return WalletTransferDisputeResponse.from(dispute);
+	}
+
+	@Transactional
+	public WalletTransferDisputeResponse rejectDispute(
+			Long adminUserId,
+			Long disputeId,
+			ResolveTransferDisputeRequest request
+	) {
+		WalletTransferDispute dispute = disputeRepository.findByIdForUpdate(disputeId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transfer dispute not found"));
+		if (dispute.getStatus() == WalletTransferDisputeStatus.RESOLVED
+				|| dispute.getStatus() == WalletTransferDisputeStatus.REJECTED) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Dispute is already closed");
+		}
+
+		String note = optionalText(request == null ? null : request.resolutionNote(), "Dispute rejected after operations review");
+		dispute.reject(adminUserId, note);
+		enqueueDisputeAudit("TRANSFER_DISPUTE_REJECTED", adminUserId, dispute, note);
+		enqueueDisputeStatusChanged(dispute);
+		return WalletTransferDisputeResponse.from(dispute);
+	}
+
+	@Transactional
+	public WalletTransferDisputeResponse resolveDisputeWithReversal(
+			Long adminUserId,
+			Long disputeId,
+			ResolveTransferDisputeRequest request
+	) {
+		WalletTransferDispute dispute = disputeRepository.findByIdForUpdate(disputeId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transfer dispute not found"));
+		if (dispute.getStatus() == WalletTransferDisputeStatus.RESOLVED
+				|| dispute.getStatus() == WalletTransferDisputeStatus.REJECTED) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Dispute is already closed");
+		}
+
+		String note = optionalText(request == null ? null : request.resolutionNote(), "Dispute resolved with transfer reversal");
+		reverseTransfer(adminUserId, dispute.getTransactionReference(), new ReverseTransferRequest(note));
+		dispute.resolve(adminUserId, note);
+		enqueueDisputeAudit("TRANSFER_DISPUTE_RESOLVED", adminUserId, dispute, note);
+		enqueueDisputeStatusChanged(dispute);
+		return WalletTransferDisputeResponse.from(dispute);
+	}
+
 	@Transactional
 	public WalletDashboardResponse deposit(Long ownerUserId, DepositRequest request) {
 		Wallet wallet = walletRepository.findByOwnerUserIdForUpdate(ownerUserId)
@@ -146,6 +267,20 @@ public class WalletService {
 				"Test funding deposit",
 				null
 		));
+		enqueueAudit(
+				"DEPOSIT_CREATED",
+				ownerUserId,
+				ownerUserId,
+				"WALLET",
+				wallet.getAccountNumber(),
+				"Wallet funded with " + wallet.getCurrency() + " " + amount,
+				Map.of(
+						"accountNumber", wallet.getAccountNumber(),
+						"amount", amount,
+						"currency", wallet.getCurrency(),
+						"reference", reference
+				)
+		);
 
 		return findDashboard(ownerUserId);
 	}
@@ -173,6 +308,7 @@ public class WalletService {
 		assertActive(receiver);
 
 		BigDecimal amount = requireMoney(request.amount());
+		transferLimitService.assertAllowed(ownerUserId, amount, senderSnapshot.getCurrency());
 		if (senderSnapshot.getAvailableBalance().compareTo(amount) < 0) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Insufficient wallet balance");
 		}
@@ -292,6 +428,22 @@ public class WalletService {
 				receiver.getAccountNumber()
 		));
 		transfer.markReversed(reversalReason);
+		enqueueAudit(
+				"TRANSFER_REVERSED",
+				adminUserId,
+				transfer.getOwnerUserId(),
+				"TRANSFER",
+				reference,
+				"Transfer " + reference + " reversed by admin",
+				Map.of(
+						"transactionReference", reference,
+						"senderAccountNumber", transfer.getSenderAccountNumber(),
+						"receiverAccountNumber", transfer.getReceiverAccountNumber(),
+						"amount", transfer.getAmount(),
+						"currency", transfer.getCurrency(),
+						"reason", reversalReason
+				)
+		);
 
 		return findDashboard(sender.getOwnerUserId());
 	}
@@ -425,6 +577,7 @@ public class WalletService {
 		assertActive(receiver);
 
 		BigDecimal amount = requireMoney(request.amount());
+		transferLimitService.assertAllowed(ownerUserId, amount, sender.getCurrency());
 		if (sender.getAvailableBalance().compareTo(amount) < 0) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Insufficient wallet balance");
 		}
@@ -508,6 +661,71 @@ public class WalletService {
 				pendingTransfer.currency(),
 				pendingTransfer.otp(),
 				pendingTransfer.expiresAt(),
+				Instant.now()
+		));
+	}
+
+	private void enqueueDisputeAudit(
+			String action,
+			Long actorUserId,
+			WalletTransferDispute dispute,
+			String summary
+	) {
+		enqueueAudit(
+				action,
+				actorUserId,
+				dispute.getOwnerUserId(),
+				"TRANSFER_DISPUTE",
+				dispute.getId().toString(),
+				summary,
+				Map.of(
+						"disputeId", dispute.getId(),
+						"transactionReference", dispute.getTransactionReference(),
+						"category", dispute.getCategory(),
+						"status", dispute.getStatus().name(),
+						"resolutionNote", optionalText(dispute.getResolutionNote(), "")
+				)
+		);
+	}
+
+	private void enqueueDisputeStatusChanged(WalletTransferDispute dispute) {
+		WalletTransfer transfer = dispute.getTransfer();
+		outboxService.enqueueTransferDisputeStatusChanged(new TransferDisputeStatusChangedEvent(
+				UUID.randomUUID().toString(),
+				dispute.getId(),
+				dispute.getOwnerUserId(),
+				dispute.getTransactionReference(),
+				transfer.getSenderAccountNumber(),
+				transfer.getReceiverAccountNumber(),
+				transfer.getAmount(),
+				transfer.getCurrency(),
+				dispute.getCategory(),
+				dispute.getStatus().name(),
+				dispute.getMessage(),
+				optionalText(dispute.getResolutionNote(), ""),
+				Instant.now()
+		));
+	}
+
+	private void enqueueAudit(
+			String action,
+			Long actorUserId,
+			Long subjectUserId,
+			String aggregateType,
+			String aggregateId,
+			String summary,
+			Map<String, Object> details
+	) {
+		outboxService.enqueueAuditTrail(new AuditTrailEvent(
+				UUID.randomUUID().toString(),
+				"walletservice",
+				action,
+				actorUserId,
+				subjectUserId,
+				aggregateType,
+				aggregateId,
+				summary,
+				details,
 				Instant.now()
 		));
 	}

@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Banknote } from 'lucide-react'
+import { FormField } from '../../components/FormField'
 
 export function WalletDepositPanel({ isSubmitting, onDeposit }) {
   const [amount, setAmount] = useState('5000')
@@ -21,8 +23,7 @@ export function WalletDepositPanel({ isSubmitting, onDeposit }) {
       </div>
 
       <form className="account-form" onSubmit={handleSubmit}>
-        <label>
-          Amount
+        <FormField label="Amount" hint="Demo funding is tracked in your wallet ledger." icon={Banknote}>
           <input
             min="1"
             step="0.01"
@@ -31,7 +32,7 @@ export function WalletDepositPanel({ isSubmitting, onDeposit }) {
             onChange={(event) => setAmount(event.target.value)}
             required
           />
-        </label>
+        </FormField>
 
         <button className="primary-button" type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Adding...' : 'Add money'}

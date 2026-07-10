@@ -106,6 +106,9 @@ public class GlobalExceptionHandler {
 		if (normalized.contains("transfer confirmation does not match")) return "TRANSFER_CONFIRMATION_MISMATCH";
 		if (normalized.contains("wallet is not active")) return "WALLET_NOT_ACTIVE";
 		if (normalized.contains("amount must be greater than zero")) return "INVALID_AMOUNT";
+		if (normalized.contains("single transfer limit")) return "SINGLE_TRANSFER_LIMIT_EXCEEDED";
+		if (normalized.contains("daily transfer count limit reached")) return "DAILY_TRANSFER_COUNT_LIMIT_REACHED";
+		if (normalized.contains("daily transfer amount limit exceeded")) return "DAILY_TRANSFER_AMOUNT_LIMIT_EXCEEDED";
 		if (normalized.contains("duplicate wallet operation")) return "DUPLICATE_WALLET_OPERATION";
 		if (normalized.contains("idempotency key was already used")) return "IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_REQUEST";
 		if (normalized.contains("duplicate wallet ledger entry")) return "DUPLICATE_WALLET_LEDGER_ENTRY";
@@ -116,6 +119,12 @@ public class GlobalExceptionHandler {
 		if (normalized.contains("too many transfer confirmation code requests")) return "TRANSFER_OTP_RESEND_LIMIT_EXCEEDED";
 		if (normalized.contains("transfer is already being processed")) return "TRANSFER_ALREADY_PROCESSING";
 		if (normalized.contains("transfer not found")) return "TRANSFER_NOT_FOUND";
+		if (normalized.contains("transfer dispute not found")) return "TRANSFER_DISPUTE_NOT_FOUND";
+		if (normalized.contains("only the sender can dispute")) return "TRANSFER_DISPUTE_FORBIDDEN";
+		if (normalized.contains("only completed transfers can be disputed")) return "TRANSFER_NOT_DISPUTABLE";
+		if (normalized.contains("open dispute")) return "TRANSFER_DISPUTE_ALREADY_OPEN";
+		if (normalized.contains("closed disputes cannot be reopened")) return "TRANSFER_DISPUTE_CLOSED";
+		if (normalized.contains("dispute is already closed")) return "TRANSFER_DISPUTE_CLOSED";
 		if (normalized.contains("transfer is already reversed")) return "TRANSFER_ALREADY_REVERSED";
 		if (normalized.contains("only completed transfers can be reversed")) return "TRANSFER_NOT_REVERSIBLE";
 		if (normalized.contains("transfer wallet not found")) return "TRANSFER_WALLET_NOT_FOUND";

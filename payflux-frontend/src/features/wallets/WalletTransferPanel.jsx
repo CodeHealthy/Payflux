@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Clock3, MailCheck, ShieldCheck } from 'lucide-react'
+import { Banknote, Clock3, FileText, MailCheck, ShieldCheck, UserCheck, WalletCards } from 'lucide-react'
+import { FormField } from '../../components/FormField'
 import { formatDateTime } from '../../utils/formatDateTime'
 import { formatMoney } from '../../utils/formatMoney'
 
@@ -57,6 +58,7 @@ function confirmationErrorMessage(errorResult) {
 
 export function WalletTransferPanel({
   beneficiaries,
+  transferLimits,
   isSubmitting,
   isResendingOtp,
   isVerifyingRecipient,
@@ -81,6 +83,18 @@ export function WalletTransferPanel({
   const hasVerifiedRecipient = verifiedRecipient?.accountNumber === normalizedReceiverAccountNumber
   const isConfirmationExpired = confirmation && secondsRemaining === 0
   const canResendOtp = confirmation && !isConfirmationExpired && resendSecondsRemaining === 0 && !isResendingOtp
+  const transferAmount = Number(amount || 0)
+  const singleLimit = Number(transferLimits?.singleTransferLimit || 0)
+  const remainingDailyLimit = Number(transferLimits?.dailyTransferAmountRemaining || 0)
+  const isCountLimitReached = Boolean(transferLimits?.countLimitReached)
+  const amountLimitMessage = transferLimitMessage({
+    amount: transferAmount,
+    singleLimit,
+    remainingDailyLimit,
+    isCountLimitReached,
+    transferLimits,
+  })
+  const isTransferBlockedByLimits = Boolean(amountLimitMessage)
 
   useEffect(() => {
     if (!confirmation) {
@@ -154,6 +168,11 @@ export function WalletTransferPanel({
   async function handleSubmit(event) {
     event.preventDefault()
     if (!hasVerifiedRecipient) {
+      return
+    }
+
+    if (isTransferBlockedByLimits) {
+      setConfirmationError(amountLimitMessage)
       return
     }
 
@@ -249,8 +268,7 @@ export function WalletTransferPanel({
 
         <form className="account-form" onSubmit={handleSubmit}>
           {beneficiaries.length > 0 && (
-            <label>
-              Saved beneficiary
+            <FormField label="Saved beneficiary" icon={UserCheck}>
               <select value={receiverAccountNumber} onChange={handleBeneficiaryChange}>
                 <option value="">Choose beneficiary or type below</option>
                 {beneficiaries.map((beneficiary) => (
@@ -259,18 +277,17 @@ export function WalletTransferPanel({
                   </option>
                 ))}
               </select>
-            </label>
+            </FormField>
           )}
 
-          <label>
-            Receiver account number
+          <FormField label="Receiver account number" hint="Verify the account before sending money." icon={WalletCards}>
             <input
               value={receiverAccountNumber}
               onChange={handleReceiverAccountNumberChange}
               placeholder="920100000001"
               required
             />
-          </label>
+          </FormField>
 
           <div className="recipient-verification-actions">
             <button
@@ -296,8 +313,11 @@ export function WalletTransferPanel({
             </div>
           )}
 
-          <label>
-            Amount
+          {transferLimits && (
+            <TransferLimitInlineSummary transferLimits={transferLimits} />
+          )}
+
+          <FormField label="Amount" icon={Banknote}>
             <input
               min="1"
               step="0.01"
@@ -306,18 +326,23 @@ export function WalletTransferPanel({
               onChange={handleAmountChange}
               required
             />
-          </label>
+          </FormField>
 
-          <label>
-            Description
+          {amountLimitMessage && (
+            <div className="confirmation-error compact" role="alert">
+              {amountLimitMessage}
+            </div>
+          )}
+
+          <FormField label="Description" hint="Shown on your statement and transfer receipt." icon={FileText}>
             <input
               maxLength="120"
               value={description}
               onChange={handleDescriptionChange}
             />
-          </label>
+          </FormField>
 
-          <button className="primary-button" type="submit" disabled={isSubmitting || !hasVerifiedRecipient}>
+          <button className="primary-button" type="submit" disabled={isSubmitting || !hasVerifiedRecipient || isTransferBlockedByLimits}>
             {isSubmitting ? 'Sending...' : 'Send money'}
           </button>
         </form>
@@ -372,8 +397,7 @@ export function WalletTransferPanel({
             </div>
 
             <form className="account-form confirmation-form" onSubmit={handleConfirm}>
-              <label>
-                Confirmation code
+              <FormField label="Confirmation code">
                 <input
                   autoFocus
                   inputMode="numeric"
@@ -388,7 +412,7 @@ export function WalletTransferPanel({
                   placeholder="000000"
                   required
                 />
-              </label>
+              </FormField>
 
               {confirmationError && (
                 <div className="confirmation-error" role="alert">
@@ -435,5 +459,44 @@ export function WalletTransferPanel({
         </div>
       )}
     </>
+  )
+}
+
+function transferLimitMessage({ amount, singleLimit, remainingDailyLimit, isCountLimitReached, transferLimits }) {
+  if (!transferLimits) {
+    return ''
+  }
+
+  if (isCountLimitReached) {
+    return 'Daily transfer count limit reached. Try again after the limit resets.'
+  }
+
+  if (amount > 0 && singleLimit > 0 && amount > singleLimit) {
+    return `Maximum per transfer is ${formatMoney(transferLimits.singleTransferLimit, transferLimits.currency)}.`
+  }
+
+  if (amount > 0 && amount > remainingDailyLimit) {
+    return `You can transfer up to ${formatMoney(transferLimits.dailyTransferAmountRemaining, transferLimits.currency)} more today.`
+  }
+
+  return ''
+}
+
+function TransferLimitInlineSummary({ transferLimits }) {
+  return (
+    <div className="transfer-limit-inline" aria-label="Transfer limit summary">
+      <article>
+        <span>Today remaining</span>
+        <strong>{formatMoney(transferLimits.dailyTransferAmountRemaining, transferLimits.currency)}</strong>
+      </article>
+      <article>
+        <span>Transfers left</span>
+        <strong>{transferLimits.dailyTransferCountRemaining}</strong>
+      </article>
+      <article>
+        <span>Per transfer</span>
+        <strong>{formatMoney(transferLimits.singleTransferLimit, transferLimits.currency)}</strong>
+      </article>
+    </div>
   )
 }

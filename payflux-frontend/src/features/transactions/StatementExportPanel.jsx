@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { CalendarDays } from 'lucide-react'
+import { FormField } from '../../components/FormField'
 
 function toDateInputValue(date) {
   return date.toISOString().slice(0, 10)
@@ -40,8 +42,7 @@ export function StatementExportPanel({ isExporting, onExportStatement }) {
       </div>
 
       <form className="statement-export-form" onSubmit={handleSubmit}>
-        <label>
-          From
+        <FormField label="From" icon={CalendarDays}>
           <input
             name="from"
             type="date"
@@ -49,10 +50,9 @@ export function StatementExportPanel({ isExporting, onExportStatement }) {
             onChange={updateField}
             required
           />
-        </label>
+        </FormField>
 
-        <label>
-          To
+        <FormField label="To" icon={CalendarDays}>
           <input
             name="to"
             type="date"
@@ -60,7 +60,7 @@ export function StatementExportPanel({ isExporting, onExportStatement }) {
             onChange={updateField}
             required
           />
-        </label>
+        </FormField>
 
         <button className="secondary-button" type="submit" disabled={isExporting}>
           {isExporting ? 'Preparing...' : 'Download CSV'}

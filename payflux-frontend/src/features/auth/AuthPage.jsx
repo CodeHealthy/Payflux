@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, HelpCircle, KeyRound, LockKeyhole, Mail, ShieldQuestion, UserRound } from 'lucide-react'
 import {
   loginUser,
   registerUser,
@@ -9,6 +9,7 @@ import {
   verifyEmail,
 } from '../../api/authApi'
 import { payfluxAssets } from '../../assets/payfluxAssets'
+import { FormField } from '../../components/FormField'
 import { saveSession } from './authSession'
 import '../../styles/AuthPage.css'
 
@@ -276,8 +277,7 @@ export function AuthPage({ initialMode = 'login', onAuthenticated, onBackHome })
 
         <form className="auth-form" onSubmit={handleSubmit}>
           {isRegisterMode && (
-            <label>
-              Full name
+            <FormField label="Full name" icon={UserRound}>
               <input
                 name="fullName"
                 type="text"
@@ -286,21 +286,20 @@ export function AuthPage({ initialMode = 'login', onAuthenticated, onBackHome })
                 placeholder="Ali Khan"
                 required
               />
-            </label>
+            </FormField>
           )}
 
           {!isVerifyMode && (
-            <label>
-            Email
-            <input
-              name="email"
-              type="email"
-              value={formValues.email}
-              onChange={handleChange}
-              placeholder="ali@example.com"
-              required
-            />
-            </label>
+            <FormField label="Email" icon={Mail}>
+              <input
+                name="email"
+                type="email"
+                value={formValues.email}
+                onChange={handleChange}
+                placeholder="ali@example.com"
+                required
+              />
+            </FormField>
           )}
 
           {isVerifyMode && (
@@ -310,8 +309,7 @@ export function AuthPage({ initialMode = 'login', onAuthenticated, onBackHome })
                 <strong>{formValues.email}</strong>
               </div>
 
-              <label>
-                Verification code
+              <FormField label="Verification code" icon={KeyRound}>
                 <input
                   inputMode="numeric"
                   maxLength="6"
@@ -325,13 +323,12 @@ export function AuthPage({ initialMode = 'login', onAuthenticated, onBackHome })
                   placeholder="000000"
                   required
                 />
-              </label>
+              </FormField>
             </>
           )}
 
           {!isRecoveryMode && !isVerifyMode && (
-            <label>
-              Password
+            <FormField label="Password" icon={LockKeyhole}>
               <input
                 name="password"
                 type="password"
@@ -341,13 +338,12 @@ export function AuthPage({ initialMode = 'login', onAuthenticated, onBackHome })
                 minLength={isRegisterMode ? 8 : undefined}
                 required
               />
-            </label>
+            </FormField>
           )}
 
           {isRegisterMode && (
             <>
-              <label>
-                Security question
+              <FormField label="Security question" hint="Use a question only you can answer." icon={ShieldQuestion}>
                 <input
                   name="securityQuestion"
                   type="text"
@@ -358,10 +354,9 @@ export function AuthPage({ initialMode = 'login', onAuthenticated, onBackHome })
                   maxLength="160"
                   required
                 />
-              </label>
+              </FormField>
 
-              <label>
-                Security answer
+              <FormField label="Security answer" hint="This helps recover your account if email access is unavailable." icon={HelpCircle}>
                 <input
                   name="securityAnswer"
                   type="text"
@@ -372,7 +367,7 @@ export function AuthPage({ initialMode = 'login', onAuthenticated, onBackHome })
                   maxLength="120"
                   required
                 />
-              </label>
+              </FormField>
             </>
           )}
 
@@ -404,8 +399,7 @@ export function AuthPage({ initialMode = 'login', onAuthenticated, onBackHome })
                     <strong>{recoveryQuestion.email}</strong>
                   </div>
 
-                  <label>
-                    Reset code
+                  <FormField label="Reset code" icon={KeyRound}>
                     <input
                       inputMode="numeric"
                       maxLength="6"
@@ -419,7 +413,7 @@ export function AuthPage({ initialMode = 'login', onAuthenticated, onBackHome })
                       placeholder="000000"
                       required
                     />
-                  </label>
+                  </FormField>
                 </>
               )}
 
@@ -430,8 +424,7 @@ export function AuthPage({ initialMode = 'login', onAuthenticated, onBackHome })
                     <strong>{recoveryQuestion.securityQuestion}</strong>
                   </div>
 
-                  <label>
-                    Security answer
+                  <FormField label="Security answer" icon={HelpCircle}>
                     <input
                       name="securityAnswer"
                       type="text"
@@ -442,12 +435,11 @@ export function AuthPage({ initialMode = 'login', onAuthenticated, onBackHome })
                       maxLength="120"
                       required
                     />
-                  </label>
+                  </FormField>
                 </>
               )}
 
-              <label>
-                New password
+              <FormField label="New password" hint="Use at least 8 characters." icon={LockKeyhole}>
                 <input
                   name="newPassword"
                   type="password"
@@ -457,7 +449,7 @@ export function AuthPage({ initialMode = 'login', onAuthenticated, onBackHome })
                   minLength="8"
                   required
                 />
-              </label>
+              </FormField>
             </>
           )}
 

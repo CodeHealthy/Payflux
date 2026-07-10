@@ -16,6 +16,7 @@ import {
   depositToWallet,
   exportWalletStatement,
   getAccounts,
+  getAdminTransferDisputes,
   getAdminUsers,
   getAdminTransferActivities,
   getAdminWallets,
@@ -25,11 +26,17 @@ import {
   getNotifications,
   getTransactionDetails,
   getTransactions,
+  getTransferDisputes,
+  getTransferLimits,
   getWalletDashboard,
   markAllNotificationsRead,
   markNotificationRead,
+  markAdminTransferDisputeUnderReview,
+  openTransferDispute,
   prepareWalletTransfer,
+  rejectAdminTransferDispute,
   resendWalletTransferOtp,
+  resolveAdminTransferDispute,
   reverseAdminTransfer,
   suspendAdminWallet,
   verifyTransferRecipient,
@@ -48,18 +55,23 @@ export function useBankingWorkspace() {
   const [adminUsers, setAdminUsers] = useState([])
   const [adminWallets, setAdminWallets] = useState([])
   const [adminTransferActivities, setAdminTransferActivities] = useState([])
+  const [adminTransferDisputes, setAdminTransferDisputes] = useState([])
+  const [transferDisputes, setTransferDisputes] = useState([])
   const [auditRecords, setAuditRecords] = useState([])
   const [auditSummary, setAuditSummary] = useState(null)
   const [walletDashboard, setWalletDashboard] = useState(null)
+  const [transferLimits, setTransferLimits] = useState(null)
   const [isLoading, setIsLoading] = useState(Boolean(currentUser))
   const [isCreatingBeneficiary, setIsCreatingBeneficiary] = useState(false)
   const [isDepositing, setIsDepositing] = useState(false)
   const [isTransferring, setIsTransferring] = useState(false)
   const [isExportingStatement, setIsExportingStatement] = useState(false)
   const [isLoadingTransactionDetails, setIsLoadingTransactionDetails] = useState(false)
+  const [isSearchingAuditRecords, setIsSearchingAuditRecords] = useState(false)
   const [isVerifyingRecipient, setIsVerifyingRecipient] = useState(false)
   const [isResendingTransferOtp, setIsResendingTransferOtp] = useState(false)
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false)
+  const [isSubmittingDispute, setIsSubmittingDispute] = useState(false)
   const [activeAction, setActiveAction] = useState('transfer')
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
@@ -73,9 +85,12 @@ export function useBankingWorkspace() {
     setAdminUsers([])
     setAdminWallets([])
     setAdminTransferActivities([])
+    setAdminTransferDisputes([])
+    setTransferDisputes([])
     setAuditRecords([])
     setAuditSummary(null)
     setWalletDashboard(null)
+    setTransferLimits(null)
     setError('')
     setSuccessMessage('')
     setActiveAction('transfer')
@@ -104,6 +119,8 @@ export function useBankingWorkspace() {
       getNotifications(),
       getBeneficiaries(),
       getWalletDashboard(),
+      getTransferLimits(),
+      getTransferDisputes(),
       getTransactions(),
     ]
 
@@ -113,12 +130,14 @@ export function useBankingWorkspace() {
       dashboardRequests.push(getAdminUsers())
       dashboardRequests.push(getAdminWallets())
       dashboardRequests.push(getAdminTransferActivities())
+      dashboardRequests.push(getAdminTransferDisputes())
     } else {
       setAuditRecords([])
       setAuditSummary(null)
       setAdminUsers([])
       setAdminWallets([])
       setAdminTransferActivities([])
+      setAdminTransferDisputes([])
     }
 
     const results = await Promise.allSettled(dashboardRequests)
@@ -128,12 +147,15 @@ export function useBankingWorkspace() {
       notificationResult,
       beneficiaryResult,
       walletResult,
+      transferLimitResult,
+      transferDisputeResult,
       transactionResult,
       auditResult,
       auditSummaryResult,
       adminUsersResult,
       adminWalletsResult,
       adminTransferActivitiesResult,
+      adminTransferDisputesResult,
     ] = results
     const failures = []
     const hasAuthFailure = results.some(
@@ -159,6 +181,23 @@ export function useBankingWorkspace() {
       }
     }
 
+    if (transferLimitResult.status === 'fulfilled') {
+      setTransferLimits(transferLimitResult.value)
+    } else {
+      setTransferLimits(null)
+      if (transferLimitResult.reason.message !== 'Wallet is not ready yet') {
+        failures.push(transferLimitResult.reason.message)
+      }
+    }
+
+    if (transferDisputeResult.status === 'fulfilled') {
+      setTransferDisputes(transferDisputeResult.value)
+    } else {
+      setTransferDisputes([])
+      if (transferDisputeResult.reason.message !== 'Wallet is not ready yet') {
+        failures.push(transferDisputeResult.reason.message)
+      }
+    }
     collectResult(transactionResult, setTransactions, failures)
     if (canReadAuditRecords && auditResult) {
       collectResult(auditResult, setAuditRecords, failures)
@@ -174,6 +213,9 @@ export function useBankingWorkspace() {
     }
     if (canReadAuditRecords && adminTransferActivitiesResult) {
       collectResult(adminTransferActivitiesResult, setAdminTransferActivities, failures)
+    }
+    if (canReadAuditRecords && adminTransferDisputesResult) {
+      collectResult(adminTransferDisputesResult, setAdminTransferDisputes, failures)
     }
 
     setError([...new Set(failures)].join(' '))
@@ -242,6 +284,7 @@ export function useBankingWorkspace() {
     try {
       const walletDetails = await depositToWallet(formValues)
       setWalletDashboard(walletDetails)
+      await refreshTransferLimits()
       setSuccessMessage('Wallet funded successfully')
     } catch (requestError) {
       handleRequestError(requestError, handleAuthRequired, setError)
@@ -328,6 +371,14 @@ export function useBankingWorkspace() {
       return null
     } finally {
       setIsVerifyingRecipient(false)
+    }
+  }
+
+  async function refreshTransferLimits() {
+    try {
+      setTransferLimits(await getTransferLimits())
+    } catch {
+      setTransferLimits(null)
     }
   }
 
@@ -443,6 +494,88 @@ export function useBankingWorkspace() {
     } catch (requestError) {
       handleRequestError(requestError, handleAuthRequired, setError)
       return false
+    }
+  }
+
+  async function handleOpenTransferDispute(transactionReference, formValues) {
+    setError('')
+    setSuccessMessage('')
+    setIsSubmittingDispute(true)
+
+    try {
+      const dispute = await openTransferDispute(transactionReference, formValues)
+      setTransferDisputes((currentDisputes) => [dispute, ...currentDisputes])
+      setSuccessMessage('Dispute submitted for operations review')
+      await loadDashboard()
+      return dispute
+    } catch (requestError) {
+      handleRequestError(requestError, handleAuthRequired, setError)
+      return null
+    } finally {
+      setIsSubmittingDispute(false)
+    }
+  }
+
+  async function handleMarkDisputeUnderReview(disputeId) {
+    setError('')
+    setSuccessMessage('')
+
+    try {
+      const dispute = await markAdminTransferDisputeUnderReview(disputeId)
+      setAdminTransferDisputes((currentDisputes) => upsertDispute(currentDisputes, dispute))
+      setSuccessMessage(`Dispute ${disputeId} moved under review`)
+      return dispute
+    } catch (requestError) {
+      handleRequestError(requestError, handleAuthRequired, setError)
+      return null
+    }
+  }
+
+  async function handleRejectDispute(disputeId, resolutionNote) {
+    setError('')
+    setSuccessMessage('')
+
+    try {
+      const dispute = await rejectAdminTransferDispute(disputeId, resolutionNote)
+      setAdminTransferDisputes((currentDisputes) => upsertDispute(currentDisputes, dispute))
+      setSuccessMessage(`Dispute ${disputeId} rejected`)
+      await loadDashboard()
+      return dispute
+    } catch (requestError) {
+      handleRequestError(requestError, handleAuthRequired, setError)
+      return null
+    }
+  }
+
+  async function handleResolveDispute(disputeId, resolutionNote) {
+    setError('')
+    setSuccessMessage('')
+
+    try {
+      const dispute = await resolveAdminTransferDispute(disputeId, resolutionNote)
+      setAdminTransferDisputes((currentDisputes) => upsertDispute(currentDisputes, dispute))
+      setSuccessMessage(`Dispute ${disputeId} resolved with reversal`)
+      await loadDashboard()
+      return dispute
+    } catch (requestError) {
+      handleRequestError(requestError, handleAuthRequired, setError)
+      return null
+    }
+  }
+
+  async function handleSearchAuditRecords(filters) {
+    setError('')
+    setIsSearchingAuditRecords(true)
+
+    try {
+      const records = await getAuditRecords(filters)
+      setAuditRecords(records)
+      return records
+    } catch (requestError) {
+      handleRequestError(requestError, handleAuthRequired, setError)
+      return []
+    } finally {
+      setIsSearchingAuditRecords(false)
     }
   }
 
@@ -563,9 +696,12 @@ export function useBankingWorkspace() {
       adminUsers,
       adminWallets,
       adminTransferActivities,
+      adminTransferDisputes,
+      transferDisputes,
       auditRecords,
       auditSummary,
       walletDashboard,
+      transferLimits,
       primaryAccount,
       dashboardStats,
       activeAction,
@@ -575,9 +711,11 @@ export function useBankingWorkspace() {
       isTransferring,
       isExportingStatement,
       isLoadingTransactionDetails,
+      isSearchingAuditRecords,
       isVerifyingRecipient,
       isResendingTransferOtp,
       isUpdatingSettings,
+      isSubmittingDispute,
       error,
       successMessage,
       isAdmin,
@@ -602,6 +740,11 @@ export function useBankingWorkspace() {
       handleSuspendWallet,
       handleActivateWallet,
       handleReverseTransfer,
+      handleOpenTransferDispute,
+      handleMarkDisputeUnderReview,
+      handleRejectDispute,
+      handleResolveDispute,
+      handleSearchAuditRecords,
       handleUpdateProfile,
       handleUpdatePassword,
       handleUpdateSecurityQuestion,
@@ -622,6 +765,16 @@ function upsertWallet(wallets, updatedWallet) {
   }
 
   return [updatedWallet, ...wallets]
+}
+
+function upsertDispute(disputes, updatedDispute) {
+  if (disputes.some((dispute) => dispute.id === updatedDispute.id)) {
+    return disputes.map((dispute) => (
+      dispute.id === updatedDispute.id ? updatedDispute : dispute
+    ))
+  }
+
+  return [updatedDispute, ...disputes]
 }
 
 function downloadStatement(csv, { from, to }) {

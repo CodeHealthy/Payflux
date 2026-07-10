@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { ContactRound, WalletCards } from 'lucide-react'
+import { FormField } from '../../components/FormField'
 
 const initialForm = {
   beneficiaryAccountNumber: '',
@@ -32,8 +34,7 @@ export function BeneficiaryCreationPanel({ isSubmitting, onCreateBeneficiary }) 
       </div>
 
       <form className="account-form" onSubmit={handleSubmit}>
-        <label>
-          Account number
+        <FormField label="Account number" hint="Use the recipient's PayFlux account number." icon={WalletCards}>
           <input
             name="beneficiaryAccountNumber"
             type="text"
@@ -44,10 +45,9 @@ export function BeneficiaryCreationPanel({ isSubmitting, onCreateBeneficiary }) 
             maxLength={32}
             required
           />
-        </label>
+        </FormField>
 
-        <label>
-          Nickname
+        <FormField label="Nickname" hint="Choose a name you will recognize later." icon={ContactRound}>
           <input
             name="nickname"
             type="text"
@@ -57,7 +57,7 @@ export function BeneficiaryCreationPanel({ isSubmitting, onCreateBeneficiary }) 
             maxLength={100}
             required
           />
-        </label>
+        </FormField>
 
         <button className="primary-button" type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Saving...' : 'Save beneficiary'}

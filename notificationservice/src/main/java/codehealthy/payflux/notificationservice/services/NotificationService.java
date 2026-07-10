@@ -2,6 +2,7 @@ package codehealthy.payflux.notificationservice.services;
 
 import codehealthy.payflux.events.AccountCreatedEvent;
 import codehealthy.payflux.events.TransferCompletedEvent;
+import codehealthy.payflux.events.TransferDisputeStatusChangedEvent;
 import codehealthy.payflux.events.TransferOtpRequestedEvent;
 import codehealthy.payflux.notificationservice.dto.NotificationResponse;
 import codehealthy.payflux.notificationservice.models.Notification;
@@ -92,6 +93,21 @@ public class NotificationService {
 		}
 	}
 
+	@Transactional
+	public void createTransferDisputeNotification(TransferDisputeStatusChangedEvent event) {
+		if (notificationRepository.existsByOwnerUserIdAndSourceEventId(event.ownerUserId(), event.eventId())) {
+			return;
+		}
+
+		notificationRepository.save(new Notification(
+				null,
+				event.ownerUserId(),
+				"wallet-events@payflux.local",
+				disputeMessage(event),
+				event.eventId()
+		));
+	}
+
 	@Transactional(readOnly = true)
 	public List<NotificationResponse> findNotificationsForUser(Long ownerUserId) {
 		return notificationRepository.findByOwnerUserIdOrderByCreatedAtDesc(ownerUserId)
@@ -144,5 +160,28 @@ public class NotificationService {
 				event.receiverAccountNumber(),
 				event.expiresAt()
 		);
+	}
+
+	private String disputeMessage(TransferDisputeStatusChangedEvent event) {
+		return switch (event.status()) {
+			case "OPEN" -> "Dispute opened for transfer " + event.transactionReference()
+					+ ". Operations will review your " + event.category().toLowerCase() + " case.";
+			case "UNDER_REVIEW" -> "Dispute " + event.disputeId()
+					+ " for transfer " + event.transactionReference() + " is now under review.";
+			case "RESOLVED" -> "Dispute " + event.disputeId()
+					+ " was resolved. " + optionalText(event.resolutionNote(), "A reversal has been processed.");
+			case "REJECTED" -> "Dispute " + event.disputeId()
+					+ " was rejected. " + optionalText(event.resolutionNote(), "Operations review found no reversal action.");
+			default -> "Dispute " + event.disputeId()
+					+ " for transfer " + event.transactionReference() + " changed to " + event.status() + ".";
+		};
+	}
+
+	private String optionalText(String value, String fallback) {
+		if (value == null || value.isBlank()) {
+			return fallback;
+		}
+
+		return value.trim();
 	}
 }
